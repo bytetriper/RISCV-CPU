@@ -4,7 +4,7 @@
 <font face="KAI"></font>
 ```mermaid
 
-graph TB
+graph BT
     classDef Memory fill:#a9f,stroke:#333,stroke-width:3px;
     
     classDef Process fill:#p3f,stroke:#111,stroke-width:3px;
@@ -20,8 +20,8 @@ graph TB
     DC(fa:fa-database L1-Dcache)
     class IC,DC,Mem Memory;
     click Mem,IC,DC "https://www.github.com"
-    Reg(fa:fa-abacus Register)
-    Prdt(fa:fa-lightbulb Predictor)
+    Reg(🧮 Register)
+    Prdt(💡 Predctor)
     subgraph Fetcher
       PC(fa:fa-arrow-up-9-1 PC reg)
       Inst(fa:fa-circle-info Instruction)
@@ -65,8 +65,3 @@ graph TB
     ROB-->|Train|Prdt
     ROB-->|Write|DC
 ```
-<script>
-mermaid.flowchartConfig = {
-    width: 100%
-}
-</script>
