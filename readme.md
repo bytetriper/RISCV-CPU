@@ -30,15 +30,17 @@ graph TB
     subgraph Core
       style Core fill:#e7e1ea
       subgraph Register
+        style Fetcher fill:#c8e8f7,stroke:#333,stroke-width:3px;
         Reg(fa:fa-abacus Register)
       end
       subgraph Fetcher
-        style Processing fill:#c8e8f7,stroke:#333,stroke-width:3px;
+        style Fetcher fill:#c8e8f7,stroke:#333,stroke-width:3px;
         PC(fa:fa-arrow-up-9-1 PC reg)
         Inst(fa:fa-circle-info Instruction)
         Prdt(fa:fa-light-bulb Predictor)
       end
       subgraph Dispatcher
+        style Dispatcher fill:#c8e8f7,stroke:#333,stroke-width:3px;
         decode(fa:fa-key Decoder)
         Process(fa:fa-microchip Processer)
       end
