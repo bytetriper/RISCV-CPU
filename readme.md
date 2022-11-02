@@ -4,41 +4,58 @@
 <font face="KAI"></font>
 ```mermaid
 
-graph BT
+graph TB
     classDef Memory fill:#a9f,stroke:#333,stroke-width:3px;
     
     classDef Process fill:#p3f,stroke:#111,stroke-width:3px;
 
     classDef Station fill:#d3f,stroke:#111,stroke-width:3px;
 
-    classDef Unit fill:#f3f,stroke:#111,stroke-width:3px;
+    classDef Unit fill:#0099ff,stroke:#111,stroke-width:3px;
+
+    classDef Special fill:#b786d1,stroke:#111,stroke-width:3px;
 
     classDef Transfer fill:#p3f,stroke:#111,stroke-width:3px;
-
-    Mem[fa:fa-memory 128KB Memory]
-    IC(fa:fa-circle-info L1-ICache)
-    DC(fa:fa-database L1-Dcache)
+    subgraph MEMORY
+      style MEMORY fill:#00afff
+      Mem[fa:fa-memory 128KB Memory]
+    end
+    subgraph Cache
+      style Cache fill:#e7e1ea
+      IC(fa:fa-circle-info L1-ICache)
+      DC(fa:fa-database L1-Dcache)
+    end
     class IC,DC,Mem Memory;
     click Mem,IC,DC "https://www.github.com"
-    Reg(🧮 Register)
-    Prdt(💡 Predctor)
-    subgraph Fetcher
-      PC(fa:fa-arrow-up-9-1 PC reg)
-      Inst(fa:fa-circle-info Instruction)
+    subgraph Core
+      style Core fill:#e7e1ea
+      subgraph Register
+        Reg(fa:fa-abacus Register)
+      end
+      subgraph Fetcher
+        style Processing fill:#c8e8f7,stroke:#333,stroke-width:3px;
+        PC(fa:fa-arrow-up-9-1 PC reg)
+        Inst(fa:fa-circle-info Instruction)
+        Prdt(fa:fa-light-bulb Predictor)
+      end
+      subgraph Dispatcher
+        decode(fa:fa-key Decoder)
+        Process(fa:fa-microchip Processer)
+      end
+      class Inst,decode,Process,Prdt Unit
+      class PC,Reg Special
+      subgraph Processing
+        style Processing fill:#c8e8f7,stroke:#333,stroke-width:3px;
+        LSB(LoadStoreBuffer)
+        RS(ReservationStation)
+        ALU(fa:fa-calculator ALU)
+        SLU(fa:fa-calculator SLU)
+        BUS(fa:fa-bus BUS)
+        ROB(fa:fa-code-commit  ReorderBuffer)
+        class ALU,SLU,ROB,RS,LSB Station
+        class BUS Transfer
+      end
     end
-    subgraph Dispatcher
-      decode(fa:fa-key Decoder)
-      Process(fa:fa-microchip Processer)
-    end
-    class Reg,Inst,PC,decode,Process,Prdt Unit
-    LSB(LoadStoreBuffer)
-    RS(ReservationStation)
-    ALU(fa:fa-calculator ALU)
-    SLU(fa:fa-calculator SLU)
-    BUS(fa:fa-bus BUS)
-    ROB(fa:fa-code-commit  ReorderBuffer)
-    class ALU,SLU,ROB,RS,LSB Station
-    class BUS Transfer
     Mem -->|Fetch| IC
     IC  -->|Write?| Mem
     Mem -->|Load| DC
