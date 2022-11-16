@@ -1,0 +1,2 @@
+module Fetcher();
+endmodule
