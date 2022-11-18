@@ -6,3 +6,5 @@
 `define Mem_Bus 7:0
 `define HIGH 1'b1
 `define LOW 1'b0
+`define Cache_Line 15
+`define Cache_Size 7
