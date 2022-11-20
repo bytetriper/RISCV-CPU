@@ -1,7 +1,7 @@
 `define True 1'b1
 `define False 1'b0
 `define byte 7
-`define Byte-Width 7:0
+`define Byte -Width 7:0
 `define Data_Bus 31:0
 `define Mem_Bus 7:0
 `define HIGH 1'b1
@@ -68,13 +68,22 @@
 
 //for RS
 `define Rs_Size 15:0
+`define NO_RS_AVAILABLE 16
 
 //for ALU
 
-`define Add 3'b0
-`define Or 3'b1
-`define LeftShift 3'b2
-`define Less 3'b3
-`define RightShift 3'b4
-`define Minus 3'b5
-`define Xor 3'b6
+`define Add 4'd0
+`define Or 4'd1
+`define LeftShift 4'd2
+`define Less 4'd3
+`define RightShift 4'd4
+`define Minus 4'd5
+`define Xor 4'd6
+`define And 4'd7
+`define Equal 4'd8
+`define NotEqual 4'd9
+`define GEQ 4'd10
+`define RightShift_A 4'd11
+
+//for ROB
+`define ROB_Size 15:0//in this case,should correspond with RS_Size

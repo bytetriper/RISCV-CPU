@@ -4,8 +4,7 @@ module Fetcher (
     input wire rst,  // reset signal
     input wire rdy,  // ready signal, pause cpu when low
 
-    input wire [31:0] Predict_Jump,
-    input wire Predict_Ready,
+    input wire [31:0] Predict_Jump,//jump or +4
 
     //with ICache
     output reg [31:0] addr,  //only 17:0 is used
@@ -26,12 +25,8 @@ module Fetcher (
         end else if (!Reading) begin
             Reading <= `True;
             rn <= `True;
-            if (Predict_Ready) begin
-                addr <= Predict_Jump;
-                PC   <= Predict_Jump;
-            end else begin
-                addr <= PC;
-            end
+            addr<=Predict_Jump;
+            PC<=Predict_Jump;
         end else begin
           if(Read_ready)begin//can instantly sent next addr here?
             Instruction<=Inst;

@@ -10,13 +10,25 @@ module Processor (
 
     //To RS
     output reg ready,
-    output reg [`Register_size] rd,
-    output reg [`Register_size] vj,
-    output reg [`Register_size] vk,
-    output reg [`Register_size] qj,
-    output reg [`Register_size] qk,
-    output reg [31:0] Name,
-    output reg [31:0] Imm
+    output reg [31:0] rd,
+    output reg [31:0] vj,
+    output reg [31:0] vk,
+    output reg [31:0] qj,
+    output reg [31:0] qk,
+    output reg [31:0] name,
+    output reg [31:0] Imm,
+
+    //From ROB
+    input wire ROB_Ready,
+    input wire[31:0] ROB_Value,
+    input wire[4:0] ROB_Addr,
+    input wire[3:0] ROB_Tag,//nesscary when deciding whether to remove Tags[Rob_addr]
+
+    //From LSB
+    input wire LSB_Ready,
+    input wire [31:0] LSB_Value,
+    input wire [4:0] LSB_Addr,
+    input wire [3:0] LSB_Tag//the same
 );
     reg [31:0] REGISTER[`Reg_Size];
     reg [31:0] Tags[`Reg_Size];
@@ -36,7 +48,7 @@ module Processor (
                         qj <= 0;
                     end
                     Imm[11:0] <= Inst[31:20];
-                    Name <= (`I_LOAD << 10) | (Inst[14:12] << 7) | (7'b0000000);
+                    name <= (`I_LOAD << 10) | (Inst[14:12] << 7) | (7'b0000000);
                     case ((Inst[14:12] << 7) | (7'b0000000))
                         `LB & `TAKEAWAY: begin
 
@@ -67,7 +79,7 @@ module Processor (
                         qj <= 0;
                     end
                     Imm[11:0] <= Inst[31:20];
-                    Name <= (`I_BINARY << 10) | (Inst[14:12] << 7) | (7'b0000000);
+                    name <= (`I_BINARY << 10) | (Inst[14:12] << 7) | (7'b0000000);
                     case ((Inst[14:12] << 7) | (7'b0000000))
                         `ADDI & `TAKEAWAY: begin
 
@@ -123,7 +135,7 @@ module Processor (
 
                     Imm[11:5] <= Inst[31:25];
                     Imm[4:0] <= Inst[11:7];
-                    Name <= (`S_SAVE << 10) | (Inst[14:12] << 7) | (7'b0000000);
+                    name <= (`S_SAVE << 10) | (Inst[14:12] << 7) | (7'b0000000);
                     case ((Inst[14:12] << 7) | (7'b0000000))
                         `SB & `TAKEAWAY: begin
 
@@ -150,7 +162,7 @@ module Processor (
                         vk <= REGISTER[Inst[24:20]];
                         qk <= 0;
                     end
-                    Name <= (`R_PRIMARY << 11) | (Inst[14:12] << 7) | (Inst[31:25]);
+                    name <= (`R_PRIMARY << 11) | (Inst[14:12] << 7) | (Inst[31:25]);
                     case ((Inst[14:12] << 7) | (Inst[31:25]))
                         `ADD & `TAKEAWAY: begin
 
@@ -202,7 +214,8 @@ module Processor (
                         qk <= 0;
                     end
                     rd <= PC;
-                    Name <= (`SB_ALL << 10) | (Inst[14:12] << 7) | (7'b0000000);
+                    name <= (`SB_ALL << 10) | (Inst[14:12] << 7) | (7'b0000000);
+
                     case ((Inst[14:12] << 7) | (7'b0000000))
                         `BEQ & `TAKEAWAY: begin
 
@@ -232,18 +245,18 @@ module Processor (
                         vj <= REGISTER[Inst[19:15]];
                         qj <= 0;
                     end
-                    rd <= PC + 4;
+                    vk <= PC + 4;
                     Imm[11:0] <= Inst[31:20];
-                    Name <= (`I_JALR << 10) | (10'b0000000000);
+                    name <= (`I_JALR << 10) | (10'b0000000000);
                 end
                 `UJ_JAL: begin
                     rd <= Inst[11:7];
-                    vk <= PC;
+                    vj <= PC+4;//risky
                     Imm[20] <= Inst[31];
                     Imm[10:1] <= Inst[30:21];
                     Imm[11] <= Inst[20];
                     Imm[19:12] <= Inst[19:12];
-                    Name <= (`UJ_JAL << 10) | (10'b0000000000);
+                    name <= (`UJ_JAL << 10) | (10'b0000000000);
                 end
             endcase
         end else
