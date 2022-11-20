@@ -65,3 +65,16 @@
 `define BGEU 17'b11000111110000000
 `define JALR 17'b11001110000000000
 `define JAL 17'b11011110000000000
+
+//for RS
+`define Rs_Size 15:0
+
+//for ALU
+
+`define Add 3'b0
+`define Or 3'b1
+`define LeftShift 3'b2
+`define Less 3'b3
+`define RightShift 3'b4
+`define Minus 3'b5
+`define Xor 3'b6
