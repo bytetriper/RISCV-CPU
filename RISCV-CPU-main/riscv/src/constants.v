@@ -87,3 +87,6 @@
 
 //for ROB
 `define ROB_Size 15:0//in this case,should correspond with RS_Size
+
+//for LSB
+`define LSB_Size 15:0

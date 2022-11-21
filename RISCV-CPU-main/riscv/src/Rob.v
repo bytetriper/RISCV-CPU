@@ -73,6 +73,7 @@ module Rob (
         end else if(RS_Ready)begin
           //assert occupied[RS_Tag] to be true here
             A[RS_Tag]<=RS_A;
+            Valid[RS_Tag]<=`True;
         end
     end
 endmodule

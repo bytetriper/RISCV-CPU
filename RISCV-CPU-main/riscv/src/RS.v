@@ -22,18 +22,26 @@ module RS (
     //To ROB
     output reg [ 3:0] ROB_Ready,  //log(RS_size)=log(16)=4
     output reg [31:0] ROB_A,
+    output reg [4:0] ROB_Tag,
 
     //TO LSB
     output reg [ 3:0] LSB_Ready,  //
     output reg [31:0] LSB_A,
-
+    output reg [31:0] LSB_Rd,
+    output reg [4:0] LSB_Tag,
     //TO ALU
     output reg ALU_ready,
     input wire ALU_success,
     output reg [31:0] LV,
     output reg [31:0] RV,
     output reg[3:0]  Op,//Look Into "Constants.v" to see the definition of Operations
-    input wire [31:0] result
+    input wire [31:0] result,
+
+    //TO Predictor
+    output reg Train_Ready,
+    output reg Train_Result,
+    output reg [31:0] Train_Name
+
 );
     reg [31:0] Vj[`Rs_Size];
     reg [31:0] Vk[`Rs_Size];
@@ -267,19 +275,41 @@ module RS (
         end else if (ALU_success) begin  //COMMIT
             A[Working_RS] <= result;
             Busy[Working_RS] <= `False;
-            //Valid[Working_RS] <= `False;
+            //Valid[Working_RS] <= `False;\
+            //
+            case (Name[Working_RS])
+                `BEQ,`BNE,`BLT,`BGE,`BLTU,`BGEU:begin
+                  Train_Ready<=`True;
+                    Train_Name<=Name[Working_RS];
+                    Train_Result<=(A[Working_RS]&1)^result;
+                end
+                default:begin
+                  Train_Ready<=`False;
+                end
+                    
+            endcase
             //commit
             case (Name[Working_RS])
-                `LB, `LH, `LW, `LBU, `LHU, `LWU, `SB, `SH, `SW: begin
-                    LSB_Ready <= Tag[Working_RS];
+                `LB, `LH, `LW, `LBU, `LHU, `LWU: begin
+                    LSB_Ready <= `True;
+                    LSB_Tag<=Tag[Working_RS]-16;
                     LSB_A <= result;
+                    LSB_Rd<=Rd[Working_RS];
                 end
+                 `SB, `SH, `SW:begin
+                    LSB_Ready <= Tag[Working_RS];
+                    LSB_Tag<=Tag[Working_RS]-16;
+                    LSB_A <=Vk[Working_RS];
+                    LSB_Rd<=result;
+                 end
                 `JALR,`JAL: begin
                     ROB_A <= result + 4;  //SP
-                    ROB_Ready <= Tag[Working_RS];
+                    ROB_Ready <= `True;
+                    LSB_Tag<=Tag[Working_RS];
                 end
                 default: begin
-                    ROB_Ready <= Tag[Working_RS];
+                    ROB_Ready <= `True;
+                    ROB_Tag<=Tag[Working_RS];
                     ROB_A <= result;
                 end
             endcase
