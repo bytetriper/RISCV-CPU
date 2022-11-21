@@ -22,10 +22,10 @@ module RS (
     //To ROB
     output reg [ 3:0] ROB_Ready,  //log(RS_size)=log(16)=4
     output reg [31:0] ROB_A,
-    output reg [4:0] ROB_Tag,
+    output reg [ 4:0] ROB_Tag,
 
     //TO LSB
-    output reg [ 3:0] LSB_Ready,  //
+    output reg [3:0] LSB_Ready,  //
     output reg [31:0] LSB_A,
     output reg [31:0] LSB_Rd,
     output reg [4:0] LSB_Tag,
@@ -278,41 +278,50 @@ module RS (
             //Valid[Working_RS] <= `False;\
             //
             case (Name[Working_RS])
-                `BEQ,`BNE,`BLT,`BGE,`BLTU,`BGEU:begin
-                  Train_Ready<=`True;
-                    Train_Name<=Name[Working_RS];
-                    Train_Result<=(A[Working_RS]&1)^result;
+                `BEQ, `BNE, `BLT, `BGE, `BLTU, `BGEU: begin
+                    Train_Ready  <= `True;
+                    Train_Name   <= Name[Working_RS];
+                    Train_Result <= (A[Working_RS] & 1) ^ result;
                 end
-                default:begin
-                  Train_Ready<=`False;
+                default: begin
+                    Train_Ready <= `False;
                 end
-                    
+
             endcase
             //commit
             case (Name[Working_RS])
                 `LB, `LH, `LW, `LBU, `LHU, `LWU: begin
                     LSB_Ready <= `True;
-                    LSB_Tag<=Tag[Working_RS]-16;
+                    LSB_Tag <= Tag[Working_RS];
                     LSB_A <= result;
-                    LSB_Rd<=Rd[Working_RS];
+                    LSB_Rd <= Rd[Working_RS];
+                    ROB_Ready <= `True;
+                    ROB_Tag <= Tag[Working_RS];
+                    ROB_A <= result;
                 end
-                 `SB, `SH, `SW:begin
+                `SB, `SH, `SW: begin
                     LSB_Ready <= Tag[Working_RS];
-                    LSB_Tag<=Tag[Working_RS]-16;
-                    LSB_A <=Vk[Working_RS];
-                    LSB_Rd<=result;
-                 end
-                `JALR,`JAL: begin
+                    LSB_Tag <= Tag[Working_RS];
+                    LSB_A <= Vk[Working_RS];
+                    LSB_Rd <= result;
+                    ROB_Ready <= `True;
+                    ROB_Tag <= Tag[Working_RS];
+                    ROB_A <= result;
+                end
+                `JALR, `JAL: begin
                     ROB_A <= result + 4;  //SP
                     ROB_Ready <= `True;
-                    LSB_Tag<=Tag[Working_RS];
+                    LSB_Tag <= Tag[Working_RS];
                 end
                 default: begin
                     ROB_Ready <= `True;
-                    ROB_Tag<=Tag[Working_RS];
+                    ROB_Tag <= Tag[Working_RS];
                     ROB_A <= result;
                 end
             endcase
+            ROB_Ready <= `True;
+            ROB_Tag <= Tag[Working_RS];
+            ROB_A <= result;
             //Broadcast
             case (Name[Working_RS])
                 `ADD,`ADDI,`AND,`ANDI,`AUIPC,`OR,`ORI,`SLL,`SLLI,`SLT,`SLTI,`SLTIU,`SLTU,`SRA,`SRAI,`SRL,`SRLI,`SUB,`XOR,`XORI:begin
@@ -327,15 +336,15 @@ module RS (
                         end
                     end
                 end
-                `JALR,`JAL: begin
+                `JALR, `JAL: begin
                     for (reg i = 0; i < 16; i = i + 1) begin
                         if (Qj[i] == Working_RS) begin
                             Qj[i] <= 0;
-                            Vj[i] <= A[Working_RS]+4;
+                            Vj[i] <= A[Working_RS] + 4;
                         end
                         if (Qk[i] == Working_RS) begin
                             Qk[i] <= 0;
-                            Vk[i] <= A[Working_RS]+4;
+                            Vk[i] <= A[Working_RS] + 4;
                         end
                     end
                 end

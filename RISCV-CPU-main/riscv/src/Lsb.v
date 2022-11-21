@@ -4,9 +4,8 @@ module LSB (
     input wire rst,  // reset signal
     input wire rdy,  // ready signal, pause cpu when low
 
-    //From Flow_Controler
-    input wire Spare,
-
+    //From ROB
+    input wire Commit,
     //From Processor
     input wire ready,
     input wire [31:0] rd,
@@ -62,8 +61,7 @@ module LSB (
     //Read or Write
     always @(posedge clk) begin
         if (rst) begin
-
-        end else if (Valid[Head] & Spare) begin
+        end else if (Commit) begin
             case (Name[Head])
                 `LB, `LH, `LW, `LBU, `LHU, `LWU: begin
                     RN   <= `True;
@@ -81,7 +79,7 @@ module LSB (
         end
     end
     //Push
-    always @(posedge clk) begin
+    always @(posedge clk) begin//TODO remake
         if (rst) begin
 
         end else if (Mem_ready) begin
@@ -109,6 +107,17 @@ module LSB (
             A[RS_Tag] <= RS_A;
             Valid[RS_Tag] <= `True;
             Rd[RS_Tag] <= RS_rd;
+            for(reg[3:0] i=RS_Tag;i!=Tail;i=i+1)//??
+            {
+                case (Name[i])
+                    `LB,`LH,`LW:begin
+                        if(Rd[i]==Rd[RS_Tag])begin
+                          A[i]<=RS_A;
+                          Valid[i]<=`True;
+                        end
+                    end
+                endcase
+            }
         end
     end
 endmodule
