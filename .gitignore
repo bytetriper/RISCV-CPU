@@ -4,3 +4,7 @@ riscv/testspace/*
 *.vcd
 
 !.keep
+
+Lsb.v
+
+*.xdc

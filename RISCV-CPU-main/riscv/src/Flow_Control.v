@@ -1,4 +1,4 @@
-module Flow_Control(
+module High_Bit(
     input wire clk,  // system clock signal
     input wire rst,  // reset signal
     input wire rdy,  // ready signal, pause cpu when low

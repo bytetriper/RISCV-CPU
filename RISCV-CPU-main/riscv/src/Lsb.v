@@ -4,42 +4,32 @@ module LSB (
     input wire rst,  // reset signal
     input wire rdy,  // ready signal, pause cpu when low
 
-    //From ROB
-    input wire Commit,
     //From Processor
     input wire ready,
     input wire [31:0] rd,
-    input wire [31:0] name,
     input wire [31:0] Imm,
-    input wire [3:0] tag,  //position in LSB
+    input wire [3:0] tag,  //position in RS
 
     //Back to Processor
     output reg success,
-    //To Register(Processor)
+    //To ROB(Processor)
     output reg LSB_Ready,
     output reg [31:0] LSB_Value,
-    output reg [4:0] LSB_Addr,
-    output reg[3:0] LSB_Tag,//nesscary when deciding whether to remove Tags[Rob_addr]
-    //From RS
-    input wire RS_Ready,
-    input wire [31:0] RS_A,
-    input wire [3:0] RS_Tag,
-    input wire [31:0] RS_rd,
+    output reg[3:0] LSB_Tag,
+    
 
     //To Mem_ctrl
     output reg              RN,         //read_enable
-    output reg              WN,         //Write_enable
     output reg  [`Data_Bus] Wvalue,
     output reg  [`Data_Bus] Addr,
     input  wire             Mem_ready,
-    input  wire [`Data_Bus] Read_value
+    input  wire [`Data_Bus] Read_value,
+    input wire Mem_Available
 );
     reg [31:0] Rd[`LSB_Size];
-    reg [31:0] Name[`LSB_Size];
     reg [31:0] A[`LSB_Size];
     reg [31:0] Tag[`LSB_Size];
     reg Valid[`LSB_Size];
-    reg Occupied[`LSB_Size];
     reg [3:0] Tail = 0;  //To automatic overflow
     reg [3:0] Head = 1;  //To automatic overflow
     //add inst from Processor
@@ -50,7 +40,6 @@ module LSB (
                 success <= `False;
             end else begin
                 Rd[Tail] <= rd;
-                Name[Tail] <= name;
                 Tag[Tail] <= tag;
                 Valid[Tail] <= `False;
                 Occupied[Tail] <= `True;
@@ -108,16 +97,6 @@ module LSB (
             Valid[RS_Tag] <= `True;
             Rd[RS_Tag] <= RS_rd;
             for(reg[3:0] i=RS_Tag;i!=Tail;i=i+1)//??
-            {
-                case (Name[i])
-                    `LB,`LH,`LW:begin
-                        if(Rd[i]==Rd[RS_Tag])begin
-                          A[i]<=RS_A;
-                          Valid[i]<=`True;
-                        end
-                    end
-                endcase
-            }
         end
     end
 endmodule
