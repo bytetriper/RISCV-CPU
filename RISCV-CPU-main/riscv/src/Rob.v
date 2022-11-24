@@ -5,6 +5,10 @@ module Rob (
     input wire rdy,  // ready signal, pause cpu when low
 
 
+    //From Flow_Control
+    input wire clr,
+    input wire [3:0] Clear_Tag,
+
     //From Processor
     input wire ready,
     input wire [31:0] rd,
@@ -28,7 +32,7 @@ module Rob (
     output reg ROB_Ready,
     output reg [31:0] ROB_Value,
     output reg [4:0] ROB_Addr,
-    output reg[3:0] ROB_Tag,//nesscary when deciding whether to remove Tags[Rob_addr]
+    output reg[3:0] ROB_Tag,//nessecary when deciding whether to remove Tags[Rob_addr]
 
     //To Mem_ctrl
     output reg              RN,           //read_enable
@@ -50,8 +54,8 @@ module Rob (
     genvar i;
     generate
         for (i = 0; i < 16; i = i + 1) begin
-            assign  ROB_Valid[i]=Valid[i];
-            assign  ROB_Imm[(i<<5)+31:(i<<5)]=A[i];
+            assign ROB_Valid[i] = Valid[i];
+            assign ROB_Imm[(i<<5)+31:(i<<5)] = A[i];
         end
     endgenerate
     assign Read_Tag =  ~Read_Able[0] ? 1 :
@@ -170,6 +174,13 @@ module Rob (
                     Read_Able[RS_Tag] <= `True;
                 end
             endcase
+        end
+    end
+    always @(posedge clk) begin
+        if (rst) begin
+
+        end else if(clr) begin
+            Tail <= Clear_Tag; //clear_tag and everything after it should be released
         end
     end
 endmodule

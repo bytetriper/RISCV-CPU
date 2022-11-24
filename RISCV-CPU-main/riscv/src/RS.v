@@ -4,6 +4,10 @@ module RS (
     input wire rst,  // reset signal
     input wire rdy,  // ready signal, pause cpu when low
 
+    //To Flow_Control
+    output reg clr,
+    output reg [3:0] Clear_Tag,
+    output reg [3:0] PC,
     //From Proccessor
 
     input wire ready,
@@ -289,7 +293,7 @@ module RS (
             A[Working_RS] <= result;
             Busy[Working_RS] <= `False;
             //Valid[Working_RS] <= `False;
-            //
+            //Train Predictor
             case (Name[Working_RS])
                 `BEQ, `BNE, `BLT, `BGE, `BLTU, `BGEU: begin
                     Train_Ready  <= `True;
@@ -320,8 +324,22 @@ module RS (
                     ROB_Tag <= Tag[Working_RS];
                     ROB_A <= result;
                 end
-                `JALR, `JAL: begin
-                    ROB_A <= result + 4;  //SP
+                `BEQ, `BNE, `BLT, `BGE, `BLTU, `BGEU: begin
+                    if (A[Working_RS] ^ result) begin
+                        clr <= `True;
+                        Clear_Tag <= Tag[Working_RS];
+                        PC <= Rd[Working_RS];
+                    end else begin
+                        LSB_Ready <= Tag[Working_RS];
+                        LSB_Tag <= Tag[Working_RS];
+                        LSB_A <= A[Working_RS];//Jump or not is a kind of result...
+                    end
+                end
+                `JALR: begin
+                    clr <= `True;  //TODO:STUCK PC or CLEAR ALL?
+                end
+                `JAL: begin
+                    ROB_A <= result;  //SP
                     ROB_Ready <= `True;
                     LSB_Tag <= Tag[Working_RS];
                 end
@@ -346,7 +364,7 @@ module RS (
                                 end
                             end
                             if (Qk[i] != `NO_RS_AVAILABLE) begin
-                                 if (ROB_Valid[Qk[i]]) begin
+                                if (ROB_Valid[Qk[i]]) begin
                                     Qk[i] <= `NO_RS_AVAILABLE;
                                     Vk[i] <= Tmp_Value[Qk[i]];
                                 end
@@ -362,7 +380,7 @@ module RS (
                                 end
                             end
                             if (Qk[i] != `NO_RS_AVAILABLE) begin
-                                 if (ROB_Valid[Qk[i]]) begin
+                                if (ROB_Valid[Qk[i]]) begin
                                     Qk[i] <= `NO_RS_AVAILABLE;
                                     Vk[i] <= Tmp_Value[Qk[i]]+4;//TODO CHECK +4
                                 end
@@ -371,6 +389,19 @@ module RS (
                     end
                 endcase
             end
+        end
+    end
+    //Make Sure clr is mostly flases ;TODO CHECK
+    always @(posedge clk) begin
+        if (rst) begin
+
+        end else if (clr) begin
+            if(ALU_success&(Name[Working_RS]==`BEQ)&(A[Working_RS]^result))begin
+                //MAKE SURE CLR WOULDN'T BE PULLED THIS CYCLE
+            end else begin
+                clr <= `False;
+            end
+
         end
     end
 endmodule

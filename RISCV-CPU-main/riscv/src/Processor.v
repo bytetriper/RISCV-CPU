@@ -8,6 +8,10 @@ module Processor (
     input wire [31:0] Inst,
     input wire [31:0] Inst_Ready,
 
+    //From Flow Controler
+    input wire clr,
+    input wire [31:0] Target_PC,
+
     //To RS
     output reg ready,
     output reg [31:0] rd,
@@ -34,7 +38,9 @@ module Processor (
     reg [31:0] Tags[`Reg_Size];
     always @(posedge clk) begin
         if (rst) begin
-        end else if (Inst_Ready) begin
+        end   else if (clr)begin
+          //DO something maybe?
+        end  else if (Inst_Ready) begin
             //Decode:Opcode Inst[6:0]
             ready <= `True;
             case (Inst[6:0])

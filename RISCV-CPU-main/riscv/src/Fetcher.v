@@ -6,6 +6,10 @@ module Fetcher (
 
     input wire [31:0] Predict_Jump,//jump or +4
 
+     //From Flow Controler
+    input wire clr,
+    input wire [31:0] Target_PC,
+
     //with ICache
     output reg [31:0] addr,  //only 17:0 is used
     output reg rn,  //read_enabled
@@ -22,6 +26,8 @@ module Fetcher (
     always @(posedge clk) begin
         if (rst) begin
 
+        end else if (clr)begin
+          PC<=Target_PC;
         end else if (!Reading) begin
             Reading <= `True;
             rn <= `True;
