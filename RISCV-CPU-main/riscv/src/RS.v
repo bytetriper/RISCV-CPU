@@ -24,6 +24,10 @@ module RS (
     output reg [31:0] ROB_A,
     output reg [ 4:0] ROB_Tag,
 
+    //From ROB
+    input wire [`ROB_Size] ROB_Valid,
+    input wire [511:0] ROB_Value,  //32*ROB_Size-1:0
+
     //TO LSB
     output reg [3:0] LSB_Ready,  //
     output reg [31:0] LSB_A,
@@ -51,6 +55,13 @@ module RS (
     reg [31:0] Name[`Rs_Size];
     reg [3:0] Tag[`Rs_Size];
     reg [31:0] Rd[`Rs_Size];
+    wire [31:0] Tmp_Value[`ROB_Size];
+    genvar i;
+    generate
+        for (i = 0; i < 16; i = i + 1) begin
+            assign Tmp_Value[i] = ROB_A[(i<<5)+31:i<<5];
+        end
+    endgenerate
     reg Busy[`Rs_Size];
     reg Valid[`Rs_Size];
     reg Working_RS = `NO_RS_AVAILABLE;
@@ -267,6 +278,8 @@ module RS (
                     Op <= `Xor;
                 end
             endcase
+        end else begin
+            ALU_ready <= `False;
         end
     end
     always @(posedge clk) begin
@@ -275,7 +288,7 @@ module RS (
         end else if (ALU_success) begin  //COMMIT
             A[Working_RS] <= result;
             Busy[Working_RS] <= `False;
-            //Valid[Working_RS] <= `False;\
+            //Valid[Working_RS] <= `False;
             //
             case (Name[Working_RS])
                 `BEQ, `BNE, `BLT, `BGE, `BLTU, `BGEU: begin
@@ -286,7 +299,6 @@ module RS (
                 default: begin
                     Train_Ready <= `False;
                 end
-
             endcase
             //commit
             case (Name[Working_RS])
@@ -323,32 +335,42 @@ module RS (
             ROB_Tag <= Tag[Working_RS];
             ROB_A <= result;
             //Broadcast
-            case (Name[Working_RS])
-                `ADD,`ADDI,`AND,`ANDI,`AUIPC,`OR,`ORI,`SLL,`SLLI,`SLT,`SLTI,`SLTIU,`SLTU,`SRA,`SRAI,`SRL,`SRLI,`SUB,`XOR,`XORI:begin
-                    for (reg i = 0; i < 16; i = i + 1) begin
-                        if (Qj[i] == Working_RS) begin
-                            Qj[i] <= 0;
-                            Vj[i] <= A[Working_RS];
-                        end
-                        if (Qk[i] == Working_RS) begin
-                            Qk[i] <= 0;
-                            Vk[i] <= A[Working_RS];
-                        end
-                    end
-                end
-                `JALR, `JAL: begin
-                    for (reg i = 0; i < 16; i = i + 1) begin
-                        if (Qj[i] == Working_RS) begin
-                            Qj[i] <= 0;
-                            Vj[i] <= A[Working_RS] + 4;
-                        end
-                        if (Qk[i] == Working_RS) begin
-                            Qk[i] <= 0;
-                            Vk[i] <= A[Working_RS] + 4;
+            for (reg i = 0; i < 16; i++) begin
+                case (Name[i])
+                    `ADD,`ADDI,`AND,`ANDI,`AUIPC,`OR,`ORI,`SLL,`SLLI,`SLT,`SLTI,`SLTIU,`SLTU,`SRA,`SRAI,`SRL,`SRLI,`SUB,`XOR,`XORI:begin
+                        for (reg i = 0; i < 16; i = i + 1) begin
+                            if (Qj[i] != `NO_RS_AVAILABLE) begin
+                                if (ROB_Valid[Qj[i]]) begin
+                                    Qj[i] <= `NO_RS_AVAILABLE;
+                                    Vj[i] <= Tmp_Value[Qj[i]];
+                                end
+                            end
+                            if (Qk[i] != `NO_RS_AVAILABLE) begin
+                                 if (ROB_Valid[Qk[i]]) begin
+                                    Qk[i] <= `NO_RS_AVAILABLE;
+                                    Vk[i] <= Tmp_Value[Qk[i]];
+                                end
+                            end
                         end
                     end
-                end
-            endcase
+                    `JALR, `JAL: begin
+                        for (reg i = 0; i < 16; i = i + 1) begin
+                            if (Qj[i] != `NO_RS_AVAILABLE) begin
+                                if (ROB_Valid[Qj[i]]) begin
+                                    Qj[i] <= `NO_RS_AVAILABLE;
+                                    Vj[i] <= Tmp_Value[Qj[i]]+4;//TODO CHECK +4
+                                end
+                            end
+                            if (Qk[i] != `NO_RS_AVAILABLE) begin
+                                 if (ROB_Valid[Qk[i]]) begin
+                                    Qk[i] <= `NO_RS_AVAILABLE;
+                                    Vk[i] <= Tmp_Value[Qk[i]]+4;//TODO CHECK +4
+                                end
+                            end
+                        end
+                    end
+                endcase
+            end
         end
     end
 endmodule

@@ -15,6 +15,10 @@ module Rob (
     //To Processor
     output reg success,
 
+    //Public
+    output wire [`ROB_Size] ROB_Valid,
+    output wire [511:0] ROB_Imm,
+
     //From RS
     input wire RS_Ready,
     input wire [31:0] RS_A,
@@ -39,11 +43,17 @@ module Rob (
     reg [31:0] A[`ROB_Size];
     reg [31:0] Tag[`ROB_Size];
     reg Valid[`ROB_Size];
-    reg Occupied[`ROB_Size];
     reg Read_Able[`ROB_Size];
     reg [3:0] Tail = 1;  //To automatic overflow
     reg [3:0] Head = 0;  //To automatic overflow
     //add inst from Processor
+    genvar i;
+    generate
+        for (i = 0; i < 16; i = i + 1) begin
+            assign  ROB_Valid[i]=Valid[i];
+            assign  ROB_Imm[(i<<5)+31:(i<<5)]=A[i];
+        end
+    endgenerate
     assign Read_Tag =  ~Read_Able[0] ? 1 :
                             ~Read_Able[1] ? 1 :
                                 ~Read_Able[2] ? 2 : 
@@ -96,7 +106,7 @@ module Rob (
     //Push
     always @(posedge clk) begin
         if (rst) begin
-        end else if (Occupied[Head] & Valid[Head]) begin
+        end else if (Valid[Head]) begin
             case (Name[Head])
                 `LB, `LH, `LW, `LBU, `LHU, `LWU: begin
 
