@@ -27,6 +27,60 @@ module cpu(
 // - 0x30000 write: write a byte to output (write 0x00 is ignored)
 // - 0x30004 read: read clocks passed since cpu starts (in dword, 4 bytes)
 // - 0x30004 write: indicates program stop (will output '\0' through uart tx)
+ICache u_ICache(
+  .clk      (clk      ),
+  .rst      (rst      ),
+  .rdy      (rdy      ),
+  .IC_rn    (IC_rn    ),
+  .IC_addr  (IC_addr  ),
+  .IC_ready (IC_ready ),
+  .IC_value (IC_value ),
+  .addr     (addr     ),
+  .rn       (rn       ),
+  .Inst     (Inst     ),
+  .ready    (ready    )
+);
+
+mem_ctrl 
+#(
+  .OffWork (OffWork ),
+  .IC      (IC      ),
+  .LSB_r   (LSB_r   ),
+  .LSB_w   (LSB_w   )
+)
+u_mem_ctrl(
+  .clk        (clk        ),
+  .rst        (rst        ),
+  .rdy        (rdy        ),
+  .mem_din    (mem_din    ),
+  .mem_dout   (mem_dout   ),
+  .mem_a      (mem_a      ),
+  .mem_wr     (mem_wr     ),
+  .IC_rn      (IC_rn      ),
+  .IC_addr    (IC_addr    ),
+  .IC_ready   (IC_ready   ),
+  .IC_value   (IC_value   ),
+  .LSB_rn     (LSB_rn     ),
+  .LSB_wn     (LSB_wn     ),
+  .LSB_Wvalue (LSB_Wvalue ),
+  .LSB_addr   (LSB_addr   ),
+  .LSB_ready  (LSB_ready  ),
+  .LSB_value  (LSB_value  )
+);
+
+
+ram 
+#(
+  .ADDR_WIDTH (ADDR_WIDTH )
+)
+u_ram(
+  .clk_in  (clk_in  ),
+  .en_in   (en_in   ),
+  .r_nw_in (r_nw_in ),
+  .a_in    (a_in    ),
+  .d_in    (d_in    ),
+  .d_out   (d_out   )
+);
 
 always @(posedge clk_in)
   begin
