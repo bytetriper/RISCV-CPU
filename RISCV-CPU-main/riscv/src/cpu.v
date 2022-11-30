@@ -81,6 +81,104 @@ u_ram(
   .d_in    (d_in    ),
   .d_out   (d_out   )
 );
+ALU u_ALU(
+  .clk         (clk         ),
+  .rst         (rst         ),
+  .rdy         (rdy         ),
+  .ALU_ready   (ALU_ready   ),
+  .ALU_success (ALU_success ),
+  .LV          (LV          ),
+  .RV          (RV          ),
+  .Op          (Op          ),
+  .result      (result      )
+);
+Flow_Control u_Flow_Control(
+  .RS_Stop (RS_Stop ),
+  .RS_Tag  (RS_Tag  ),
+  .PC      (PC      ),
+  .clr     (clr     ),
+  .PC_out  (PC_out  ),
+  .Tag     (Tag     )
+);
+Processor u_Processor(
+  .clk        (clk        ),
+  .rst        (rst        ),
+  .rdy        (rdy        ),
+  .PC         (PC         ),
+  .Inst       (Inst       ),
+  .Inst_Ready (Inst_Ready ),
+  .clr        (clr        ),
+  .Target_PC  (Target_PC  ),
+  .ready      (ready      ),
+  .rd         (rd         ),
+  .vj         (vj         ),
+  .vk         (vk         ),
+  .qj         (qj         ),
+  .qk         (qk         ),
+  .name       (name       ),
+  .Imm        (Imm        ),
+  .ROB_Ready  (ROB_Ready  ),
+  .ROB_Value  (ROB_Value  ),
+  .ROB_Addr   (ROB_Addr   ),
+  .ROB_Tag    (ROB_Tag    ),
+  .LSB_Ready  (LSB_Ready  ),
+  .LSB_Value  (LSB_Value  ),
+  .LSB_Addr   (LSB_Addr   ),
+  .LSB_Tag    (LSB_Tag    )
+);
+Rob u_Rob(
+  .clk         (clk         ),
+  .rst         (rst         ),
+  .rdy         (rdy         ),
+  .clr         (clr         ),
+  .Clear_Tag   (Clear_Tag   ),
+  .ready       (ready       ),
+  .rd          (rd          ),
+  .name        (name        ),
+  .Imm         (Imm         ),
+  .tag         (tag         ),
+  .success     (success     ),
+  .ROB_Valid   (ROB_Valid   ),
+  .ROB_Imm     (ROB_Imm     ),
+  .RS_Ready    (RS_Ready    ),
+  .RS_A        (RS_A        ),
+  .RS_Tag      (RS_Tag      ),
+  .ROB_Ready   (ROB_Ready   ),
+  .ROB_Value   (ROB_Value   ),
+  .ROB_Addr    (ROB_Addr    ),
+  .ROB_Tag     (ROB_Tag     ),
+  .RN          (RN          ),
+  .WN          (WN          ),
+  .Wvalue      (Wvalue      ),
+  .Addr        (Addr        ),
+  .Mem_Success (Mem_Success ),
+  .Read_Value  (Read_Value  )
+);
+Predictor u_Predictor(
+  .clk          (clk          ),
+  .rst          (rst          ),
+  .rdy          (rdy          ),
+  .PC           (PC           ),
+  .Imm          (Imm          ),
+  .Predict_Jump (Predict_Jump ),
+  .Train_Ready  (Train_Ready  ),
+  .Train_Result (Train_Result ),
+  .Name         (Name         )
+);
+Fetcher u_Fetcher(
+  .clk          (clk          ),
+  .rst          (rst          ),
+  .rdy          (rdy          ),
+  .Predict_Jump (Predict_Jump ),
+  .clr          (clr          ),
+  .Target_PC    (Target_PC    ),
+  .addr         (addr         ),
+  .rn           (rn           ),
+  .Inst         (Inst         ),
+  .Read_ready   (Read_ready   ),
+  .CurrentAddr  (CurrentAddr  ),
+  .ready        (ready        )
+);
 
 always @(posedge clk_in)
   begin
