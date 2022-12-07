@@ -179,12 +179,10 @@ Fetcher u_Fetcher(
   .CurrentAddr  (CurrentAddr  ),
   .ready        (ready        )
 );
-
 always @(posedge clk_in)
   begin
     if (rst_in)
       begin
-      
       end
     else if (!rdy_in)
       begin
