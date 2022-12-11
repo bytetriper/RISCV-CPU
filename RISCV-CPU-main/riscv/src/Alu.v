@@ -12,26 +12,54 @@ module ALU (
     output reg [31:0] result
 
 );
-    always @(posedge clk) begin
+    integer Err_File;
+    initial begin
+      Err_File=$fopen("ALU_ERROR.txt","w");
+    end
+    always @(posedge ALU_ready) begin
         if (rst) begin
-
+          
         end else if (ALU_ready) begin
             ALU_success<=`True;
             case (Op)
                 `Add:begin
-                  result<=LV+RV;
+                  result=LV+RV;
                 end
-                `Minus:begin
-                  result<=LV-RV;
+                `Or:begin
+                  result=LV |RV;
                 end
                 `LeftShift:begin
-                  result<=LV<<RV;
+                  result=LV<<RV;
+                end
+                `Less:begin
+                  result={31'b0,LV<RV};
                 end
                 `RightShift:begin
-                  result<=LV>>RV;
+                  result=LV>>RV;
+                end
+                `Minus:begin
+                  result=LV-RV;
+                end
+                `Xor:begin
+                  result=LV^RV;
+                end
+                `And:begin
+                  result=LV&RV;
+                end
+                `Equal:begin
+                  result={31'b0,LV==RV};
+                end
+                `NotEqual:begin
+                  result={31'b0,LV!=RV};
+                end
+                `GEQ:begin
+                  result={31'b0,LV>=RV};
                 end
                 `RightShift_A:begin
-                  result<=$signed(LV)>>RV ;
+                  result=$signed(LV)>>RV;
+                end
+                default:begin
+                  $fdisplay(Err_File,"[Decoding Error At ALU]%d",Op);
                 end
             endcase
         end

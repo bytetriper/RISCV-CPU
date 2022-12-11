@@ -1,5 +1,4 @@
 `include "constants.v"
-`include "mem_ctrl.v"
 module ICache (
     input wire clk,  // system clock signal
     input wire rst,  // reset signal
@@ -34,6 +33,7 @@ module ICache (
                 Ram_Addr <= Ram_Addr + 4;
                 if (Ram_Addr + 4 > Ram_Addr_limit) begin
                     ToRam <= `False;
+                    IC_rn<=`False;
                     ready <= `True;
                     Inst  <= Cache[PC[8:6]][PC[5:2]];
                 end

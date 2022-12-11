@@ -20,7 +20,7 @@
 `define U_AUIPC 7'b0010111
 `define U_LUI 7'b0110111
 `define S_SAVE 7'b0100011
-`define R_PRIMARY 7'b0100011
+`define R_PRIMARY 7'b0110011
 `define SB_ALL 7'b1100011
 `define I_JALR 7'b1100111
 `define UJ_JAL 7'b1101111
@@ -66,10 +66,13 @@
 `define JALR 17'b11001110000000000
 `define JAL 17'b11011110000000000
 
-//for RS
-`define Rs_Size 15:0
-`define NO_RS_AVAILABLE 16
+//For Register
+`define Register_Width 3:0
 
+//for RS
+`define RS_Size 31:0
+`define NO_RS_AVAILABLE 32
+`define RS_Width 4:0
 //for ALU
 
 `define Add 4'd0
@@ -86,7 +89,10 @@
 `define RightShift_A 4'd11
 
 //for ROB
-`define ROB_Size 15:0//in this case,should correspond with RS_Size
+`define ROB_Size 15:0//in this case,should >= RS_Size
+`define Empty 32
+`define ROB_Width 3:0
+
 
 //for LSB
 `define LSB_Size 15:0
