@@ -1,5 +1,5 @@
 `include "constants.v"
-module ALU (
+module Alu (
     input wire clk,  // system clock signal
     input wire rst,  // reset signal
     input wire rdy,  // ready signal, pause cpu when low
@@ -16,11 +16,11 @@ module ALU (
     initial begin
       Err_File=$fopen("ALU_ERROR.txt","w");
     end
-    always @(posedge ALU_ready) begin
+    always @(*) begin
         if (rst) begin
           
         end else if (ALU_ready) begin
-            ALU_success<=`True;
+            ALU_success=`True; 
             case (Op)
                 `Add:begin
                   result=LV+RV;

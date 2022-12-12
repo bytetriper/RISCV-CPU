@@ -13,12 +13,12 @@ module Fetcher (
     //To ICache
     output reg [`Data_Bus] addr,  //only 17:0 is used
     output reg rn,  //read_enabled
-    
+
 
     //From ICache
     input wire [`Data_Bus] Inst,
     input wire Read_ready,
-    
+
     //To Processor
     output reg [`Data_Bus] CurrentInst,
     output reg ready,
@@ -28,29 +28,36 @@ module Fetcher (
     //Exposed
     output wire [`Data_Bus] Out_PC
 );
-    reg Reading = `False;
-    reg [31:0] PC = 32'b0;
-    reg [31:0] Instruction = 32'b0;
-    assign Out_PC =PC;
+    reg [`Data_Bus] PC ;
+    reg [`Data_Bus] Inst_Buffer;
+    assign Out_PC = PC;
+    initial begin
+        ready = `False;
+        rn = `False;
+        PC=32'b0;
+        Inst_Buffer=32'b0;
+    end
+    always @(negedge clk) begin
+        ready<=`False;
+    end
     always @(posedge clk) begin
         if (rst) begin
 
         end else if (clr) begin
-            PC <= Target_PC;
-        end else if ((!Reading)&success) begin
-            Reading <= `True;
-            rn <= `True;
-            addr <= Predict_Jump;
-            PC <= Predict_Jump;
-        end else begin
-            if (Read_ready) begin  //can instantly sent next addr here?
-                Instruction <= Inst;
-                Reading <= `False;
-                rn <= `False;
-                CurrentInst <= Inst;
+            
+        end else if (Read_ready) begin
+            Inst_Buffer <= Inst;
+            if (success) begin
+                rn <= `True;
+                addr <= Predict_Jump;
                 ready <= `True;
-                //maybe sent PC here
+                CurrentInst <= Inst_Buffer;
+                PC <= Predict_Jump;
+            end else begin
+                rn <= `False;
             end
+        end else begin
+            ready <= `False;
         end
     end
 endmodule

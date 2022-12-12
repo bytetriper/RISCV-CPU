@@ -17,41 +17,53 @@ module ICache (
     output reg ready
 );
 
-    reg [31:0] Cache[`Cache_Size:0][`Cache_Line:0];
-    reg [22:0] Tag [`Cache_Size:0];//20=32-log(32(4 byte each))-log(8(Cache Size 8))-log(16(Cache_Line size))
+    reg [31:0] Cache[`Cache_Size][`Cache_Line];
+    reg [22:0] Tag [`Cache_Size];//20=32-log(32(4 byte each))-log(8(Cache Size 8))-log(16(Cache_Line size))
     reg [31:0] PC;
     reg ToRam = `False;
     reg [31:0] Ram_Addr;
     reg [31:0] Ram_Addr_limit;
-    always @(posedge clk) begin
+    integer i, j;
+    initial begin
+        for (i = 0; i < 8; i = i + 1) begin
+            Tag[i] = ~(23'b0);  //Assure No Conflict at first
+        end
+        IC_rn = `False;
+        ready = `True;
+    end
+    always @(addr) begin
         if (rst) begin
-        end else if (ToRam) begin
-            if (IC_ready) begin
-                IC_rn <= `True;
-                IC_addr <= Ram_Addr;
-                Cache[PC[8:6]][Ram_Addr[5:2]] <= IC_value;
-                Ram_Addr <= Ram_Addr + 4;
-                if (Ram_Addr + 4 > Ram_Addr_limit) begin
-                    ToRam <= `False;
-                    IC_rn<=`False;
-                    ready <= `True;
-                    Inst  <= Cache[PC[8:6]][PC[5:2]];
-                end
-            end
+
         end else if (rn) begin
-            PC <= addr;
-            ready <= `False;
+            PC = addr;
             if (Tag[addr[8:6]] == addr[31:9]) begin
-                ready <= `True;
-                Inst  <= Cache[addr[8:6]][addr[5:2]];
+                ready = `True;
+                Inst  = Cache[addr[8:6]][addr[5:2]];
             end else begin
-                ToRam <= `True;
-                Tag[addr[8:6]] <= addr[31:9];
-                Ram_Addr[31:9] <= addr[31:9];
-                Ram_Addr_limit[31:9] <= addr[31:9];
-                Ram_Addr_limit[8:0] <= 9'b11111100;
-                Ram_Addr[8:0] <= 0;
+                ready = `False;
+                ToRam = `True;
+                Tag[addr[8:6]] = addr[31:9];
+                Ram_Addr = {addr[31:9], 9'b100};
+                Ram_Addr_limit = {addr[31:9], 9'b111100};
+                IC_rn = `True;
+                IC_addr = {addr[31:9], 9'b0};
             end
+        end
+    end
+    always @(posedge IC_ready) begin
+        if (rst) begin
+
+        end else if (Ram_Addr != Ram_Addr_limit) begin
+            IC_rn = `True;
+            $display("PC:%x IC:%x", IC_addr, IC_value);
+            IC_addr = Ram_Addr;
+            Cache[PC[8:6]][Ram_Addr[5:2]] = IC_value;
+            Ram_Addr = Ram_Addr + 4;
+        end else begin
+            ToRam = `False;
+            IC_rn = `False;
+            ready = `True;
+            Inst  = Cache[PC[8:6]][PC[5:2]];
         end
     end
 endmodule

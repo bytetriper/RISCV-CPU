@@ -16,7 +16,7 @@ module Rob (
     input wire [`Data_Bus] Imm,
 
     //To Processor
-    output reg success,
+    output wire success,
 
     //Public
     output wire [`ROB_Size] ROB_Valid,
@@ -27,6 +27,8 @@ module Rob (
     input wire [`Data_Bus] RS_A,
     input wire [`ROB_Width] RS_Tag,
 
+    //To RS
+    output reg ROB_TO_RS_ready,
     //To Register(Processor)
     output reg ROB_Ready,
     output reg [`Data_Bus] ROB_Value,
@@ -39,7 +41,10 @@ module Rob (
     output reg  [`Data_Bus] Wvalue,
     output reg  [`Data_Bus] Addr,
     input  wire             Mem_Success,
-    input  wire [`Data_Bus] Read_Value
+    input  wire [`Data_Bus] Read_Value,
+
+    //Exposed
+    output wire [`ROB_Width] Tag
 );
     reg [`Data_Bus] Rd[`ROB_Size];
     reg [16:0] Name[`ROB_Size];
@@ -49,6 +54,8 @@ module Rob (
     reg [`ROB_Width] Tail = 1;  //To automatic overflow
     reg [`ROB_Width] Head = 0;  //To automatic overflow
     //add inst from Processor
+    assign Tag = Tail;
+    assign success = (Head != Tail);
     genvar i;
     generate
         for (i = 0; i < 16; i = i + 1) begin
@@ -78,21 +85,42 @@ module Rob (
                                                                                     Read_Able[13] ? 13 :
                                                                                         Read_Able[14] ? 14 : 
                                                                                             Read_Able[15] ? 15 :0;
-    always @(posedge clk) begin
+    integer k;
+    initial begin
+        for (k = 0; k < 16; k = k + 1) begin
+            Valid[k] = 0;
+            Read_Able[k] = 0;
+        end
+        RN = `False;
+        WN = `False;
+        Wvalue = 0;
+        Addr = 0;
+        ROB_Ready = `False;
+        ROB_Value = 0;
+        ROB_Addr = 0;
+        ROB_Tag = 0;
+    end
+
+    always @(posedge ready) begin
         if (rst) begin
 
         end else if (ready) begin
             if (Head == Tail) begin
-                success <= `False;
+                ROB_TO_RS_ready = `False;
             end else begin
-                success <= `True;
-                Rd[Tail] <= rd;
-                Name[Tail] <= name;
-                A[Tail] <= Imm;
-                Valid[Tail] <= `False;
-                Tail <= Tail + 1;
+                Rd[Tail] = rd;
+                Name[Tail] = name;
+                A[Tail] = Imm;
+                Valid[Tail] = `False;
+                ROB_TO_RS_ready = `True;
+                Tail = Tail + 1;
             end
+        end else begin
+            ROB_TO_RS_ready = `False;
         end
+    end
+    always @(negedge clk) begin//To make sure New Insts always come with a posedge ROB_TO_RS_ready
+        ROB_TO_RS_ready=`False;
     end
     always @(posedge clk) begin
         if (rst) begin
@@ -131,12 +159,11 @@ module Rob (
                 default: begin
                     ROB_Ready <= `True;
                     ROB_Value <= A[Head];
-                    ROB_Addr <= Rd[Head][3:0];
+                    ROB_Addr <= Rd[Head][4:0];
                     ROB_Tag <= Head;
                     Head <= Head + 1;
                 end
             endcase
-
         end else begin
             ROB_Ready <= `False;
         end
@@ -153,14 +180,14 @@ module Rob (
                         Head <= Head + 1;
                         Valid[Head] <= `True;
                         ROB_Ready <= `True;
-                        ROB_Addr <= Rd[Head][3:0];
+                        ROB_Addr <= Rd[Head][4:0];
                         ROB_Tag <= Head;
                         ROB_Value <= Read_Value;
                     end else begin
                         A[Head] <= Read_Value;
                     end
                 end else begin
-                    $display("Mem_success Error");
+                    //$display("Mem_success Error");
                 end
             end
         end
@@ -180,11 +207,11 @@ module Rob (
             endcase
         end
     end
-    always @(posedge clk) begin
+    always @(posedge clr) begin
         if (rst) begin
 
         end else if (clr) begin
-            Tail <= Clear_Tag; //clear_tag and everything after it should be released
+            Tail = Clear_Tag; //clear_tag and everything after it should be released
         end
     end
 endmodule

@@ -4,7 +4,7 @@ module RS (
     input wire rst,  // reset signal
     input wire rdy,  // ready signal, pause cpu when low
 
-    //To Flow_Control
+    //Exposed
     output reg clr,
     output reg [`ROB_Width] Clear_Tag,
     output reg [`Data_Bus] PC,
@@ -51,18 +51,33 @@ module RS (
     reg [`ROB_Width] Tag[`RS_Size];
     reg [`Data_Bus] Rd[`RS_Size];
     wire [`Data_Bus] Tmp_Value[`ROB_Size];
+    reg Busy [`RS_Size];
+    reg Valid[`RS_Size];
     genvar i;
+    integer j;
     generate
         for (i = 0; i < 16; i = i + 1) begin
             assign Tmp_Value[i] = ROB_Value[(i<<5)+31:i<<5];
         end
     endgenerate
-    reg Busy [`RS_Size];
-    reg Valid[`RS_Size];
     initial begin
-        for (int i = 0; i < 16; i = i + 1) begin
-            Busy[i]  = `True;
-            Valid[i] = `False;
+        for (j = 0; j < 16; j = j + 1) begin
+            Busy[j]=`False;
+            Valid[j]=`False;
+            Train_Ready=`False;
+            ALU_ready=`False;
+            ROB_Ready=`False;
+            clr=`False;
+            LV=0;
+            RV=0;
+            Op=`Add;
+        end
+    end
+    
+    initial begin
+        for (j = 0; j < 32; j = j + 1) begin
+            Busy[j]  = `False;
+            Valid[j] = `False;
         end
     end
     reg [`RS_Width] Working_RS;
@@ -89,7 +104,7 @@ module RS (
     generate
         assign HasFree  = !Busy[0];
         assign HasValid = Valid[0];
-        for (i = 1; i < 16; i = i + 1) begin
+        for (i = 1; i < 32; i = i + 1) begin
             assign HasFree  = HasFree | (!Busy[i]);
             assign HasValid = HasValid | Valid[i];
         end
@@ -110,26 +125,6 @@ module RS (
                                                                             ~Valid[13] ? 13 :
                                                                                 ~Valid[14] ? 14 : 
                                                                                     ~Valid[15] ? 15 :0;
-    always @(posedge clk) begin
-        if (rst) begin
-
-        end else if (ready) begin
-            if (!HasFree) begin
-                //Success <= `False;
-            end else begin
-                Vj[free_tag] <= vj;
-                Qj[free_tag] <= qj;
-                Vk[free_tag] <= vk;
-                Qk[free_tag] <= qk;
-                A[free_tag] <= Imm;
-                Rd[free_tag] <= rd;
-                Tag[free_tag] <= tag;
-                Name[free_tag] <= name;
-                Valid[free_tag] <= `False;
-                Busy[free_tag] <= `True;
-            end
-        end
-    end
     always @(posedge clk) begin
         if (rst) begin
 
@@ -353,48 +348,48 @@ module RS (
             //Broadcast
         end
     end
-    always @(posedge ready) begin//Introduce new inst into RS
-            if (!HasFree) begin
-            end else begin
-                Vj[free_tag] = vj;
-                Qj[free_tag] = qj;
-                Vk[free_tag] = vk;
-                Qk[free_tag] = qk;
-                A[free_tag] = Imm;
-                Rd[free_tag] = rd;
-                Tag[free_tag] = tag;
-                Name[free_tag] = name;
-                Valid[free_tag] = `False;
-                if(qj!=`Empty)begin
-                    if(ROB_Valid[qj])begin
-                        Vj[free_tag]=Tmp_Value[qj];
-                        Qj[free_tag]=`Empty;
-                    end
+    always @(posedge ready) begin  //Introduce new inst into RS
+        if (!HasFree) begin
+        end else begin
+            Vj[free_tag] = vj;
+            Qj[free_tag] = qj;
+            Vk[free_tag] = vk;
+            Qk[free_tag] = qk;
+            A[free_tag] = Imm;
+            Rd[free_tag] = rd;
+            Tag[free_tag] = tag;
+            Name[free_tag] = name;
+            Valid[free_tag] = `False;
+            if (qj != `Empty) begin
+                if (ROB_Valid[qj]) begin
+                    Vj[free_tag] = Tmp_Value[qj];
+                    Qj[free_tag] = `Empty;
                 end
-                if(qk!=`Empty)begin
-                    if(ROB_Valid[qk])begin
-                        Vk[free_tag]=Tmp_Value[qk];
-                        Qk[free_tag]=`Empty;
-                    end
-                end
-                Busy[free_tag] = `True;//LAST indeed
             end
+            if (qk != `Empty) begin
+                if (ROB_Valid[qk]) begin
+                    Vk[free_tag] = Tmp_Value[qk];
+                    Qk[free_tag] = `Empty;
+                end
+            end
+            Busy[free_tag] = `True;  //LAST indeed
+        end
     end
 
     always @(posedge clk) begin
-        for (integer i = 0; i < 16; i++) begin
-            case (Name[i])
+        for (j = 0; j < 32; j++) begin
+            case (Name[j])
                 default: begin
-                    if (Qj[i] != `Empty) begin
-                        if (ROB_Valid[Qj[i]]) begin
-                            Qj[i] <= `Empty;
-                            Vj[i] <= Tmp_Value[Qj[i]];
+                    if (Qj[j] != `Empty) begin
+                        if (ROB_Valid[Qj[j]]) begin
+                            Qj[j] <= `Empty;
+                            Vj[j] <= Tmp_Value[Qj[j]];
                         end
                     end
-                    if (Qk[i] != `Empty) begin
-                        if (ROB_Valid[Qk[i]]) begin
-                            Qk[i] <= `Empty;
-                            Vk[i] <= Tmp_Value[Qk[i]];
+                    if (Qk[j] != `Empty) begin
+                        if (ROB_Valid[Qk[j]]) begin
+                            Qk[j] <= `Empty;
+                            Vk[j] <= Tmp_Value[Qk[j]];
                         end
                     end
                 end
@@ -406,13 +401,13 @@ module RS (
         if (rst) begin
 
         end else if (clr) begin
-            if(ALU_success&(A[Working_RS][0]^result[0]))begin
+            if (ALU_success & (A[Working_RS][0] ^ result[0])) begin
                 //MAKE SURE CLR WOULDN'T BE PULLED THIS CYCLE
                 case (Name[Working_RS])
-                    `BEQ,`BGE,`BGEU,`BLT,`BLTU,`BNE:begin
+                    `BEQ, `BGE, `BGEU, `BLT, `BLTU, `BNE: begin
                     end
-                    default :begin
-                        clr<=`False;
+                    default: begin
+                        clr <= `False;
                     end
                 endcase
             end else begin

@@ -1,0 +1,2 @@
+[Fatal Error] 00000000
+[Fatal Error] xxxxxxxx
