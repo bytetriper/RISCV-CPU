@@ -43,7 +43,7 @@ module ICache (
                 ready = `False;
                 ToRam = `True;
                 Tag[addr[8:6]] = addr[31:9];
-                Ram_Addr = {addr[31:9], 9'b100};
+                Ram_Addr = {addr[31:9], 9'b0};
                 Ram_Addr_limit = {addr[31:9], 9'b111100};
                 IC_rn = `True;
                 IC_addr = {addr[31:9], 9'b0};
@@ -56,9 +56,10 @@ module ICache (
         end else if (Ram_Addr != Ram_Addr_limit) begin
             IC_rn = `True;
             $display("PC:%x IC:%x", IC_addr, IC_value);
-            IC_addr = Ram_Addr;
+            
             Cache[PC[8:6]][Ram_Addr[5:2]] = IC_value;
             Ram_Addr = Ram_Addr + 4;
+            IC_addr = Ram_Addr;
         end else begin
             ToRam = `False;
             IC_rn = `False;

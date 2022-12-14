@@ -14,54 +14,56 @@ module Alu (
 );
     integer Err_File;
     initial begin
-      Err_File=$fopen("ALU_ERROR.txt","w");
+        Err_File = $fopen("ALU_ERROR.txt", "w");
     end
     always @(*) begin
         if (rst) begin
-          
+
         end else if (ALU_ready) begin
-            ALU_success=`True; 
+            ALU_success = `True;
             case (Op)
-                `Add:begin
-                  result=LV+RV;
+                `Add: begin
+                    result = LV + RV;
                 end
-                `Or:begin
-                  result=LV |RV;
+                `Or: begin
+                    result = LV | RV;
                 end
-                `LeftShift:begin
-                  result=LV<<RV;
+                `LeftShift: begin
+                    result = LV << RV;
                 end
-                `Less:begin
-                  result={31'b0,LV<RV};
+                `Less: begin
+                    result = {31'b0, LV < RV};
                 end
-                `RightShift:begin
-                  result=LV>>RV;
+                `RightShift: begin
+                    result = LV >> RV;
                 end
-                `Minus:begin
-                  result=LV-RV;
+                `Minus: begin
+                    result = LV - RV;
                 end
-                `Xor:begin
-                  result=LV^RV;
+                `Xor: begin
+                    result = LV ^ RV;
                 end
-                `And:begin
-                  result=LV&RV;
+                `And: begin
+                    result = LV & RV;
                 end
-                `Equal:begin
-                  result={31'b0,LV==RV};
+                `Equal: begin
+                    result = {31'b0, LV == RV};
                 end
-                `NotEqual:begin
-                  result={31'b0,LV!=RV};
+                `NotEqual: begin
+                    result = {31'b0, LV != RV};
                 end
-                `GEQ:begin
-                  result={31'b0,LV>=RV};
+                `GEQ: begin
+                    result = {31'b0, LV >= RV};
                 end
-                `RightShift_A:begin
-                  result=$signed(LV)>>RV;
+                `RightShift_A: begin
+                    result = $signed(LV) >> RV;
                 end
-                default:begin
-                  $fdisplay(Err_File,"[Decoding Error At ALU]%d",Op);
+                default: begin
+                    $fdisplay(Err_File, "[Decoding Error At ALU]%d", Op);
                 end
             endcase
+        end else begin
+            ALU_success = `False;
         end
     end
 endmodule

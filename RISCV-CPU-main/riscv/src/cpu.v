@@ -45,6 +45,7 @@ module cpu (
     wire                                   Read_ready;
     wire                                   CurrentAddr;
 
+    wire                                   Predict_Jump_Bool;
     wire                [      `Data_Bus]  Predict_Jump;
     wire                [      `Data_Bus]  Target_PC;
     wire                [      `Data_Bus]  CurrentInst;
@@ -62,11 +63,12 @@ module cpu (
     wire                [           16:0 ] name;
     wire                [      `Data_Bus]  Imm;
     wire                                   success;
+    wire                [     `ROB_Width]  ROB_Tail;
     wire                                   ROB_Ready;
     wire                [      `Data_Bus]  ROB_Value;
     wire                [`Register_Width]  ROB_Addr;
 
-    wire ROB_TO_RS_ready;
+    wire                                   ROB_TO_RS_ready;
     wire                                   ROB_Ready_RS;
     wire                [     `ROB_Width]  ROB_Addr_RS;
     wire                [      `Data_Bus]  ROB_A_RS;
@@ -84,9 +86,8 @@ module cpu (
     wire                                   Train_Ready;
     wire                                   Train_Result;
 
-    wire                                   RS_Stop;
-    wire                [     `ROB_Width]  RS_Tag;
-    wire                [     `Data_Bus]  RS_PC;
+   
+    wire[`Data_Bus]            Clr_PC;
     wire                [     `ROB_Width]  Tag;
     wire                                   clear;
     mem_ctrl u_mem_ctrl (
@@ -126,8 +127,8 @@ module cpu (
         .rst         (rst_in),
         .rdy         (True_Wire),
         .Predict_Jump(Predict_Jump),
-        .clr         (RS_Stop),
-        .Target_PC   (RS_PC),
+        .clr         (clear),
+        .Target_PC   (Clr_PC),
         .addr        (addr),
         .rn          (rn),
         .Inst        (Inst),
@@ -138,47 +139,46 @@ module cpu (
         .Out_PC      (Out_PC)
     );
     Predictor u_Predictor (
-        .clk          (clk_in & rdy_in),
-        .rst          (rst_in),
-        .rdy          (True_Wire),
-        .Fetcher_Ready(Fetcher_Ready),
-        .PC           (Out_PC),
-        .Inst         (CurrentInst),
-        .Predict_Jump (Predict_Jump),
-        .Train_Ready  (Train_Ready),
-        .Train_Result (Train_Result)
+        .clk              (clk_in & rdy_in),
+        .rst              (rst_in),
+        .rdy              (True_Wire),
+        .PC               (addr),              //GAN
+        .Inst             (Inst),
+        .Predict_Jump     (Predict_Jump),
+        .Train_Ready      (Train_Ready),
+        .Train_Result     (Train_Result),
+        .Predict_Jump_Bool(Predict_Jump_Bool)
     );
     Processor u_Processor (
-        .clk         (clk_in & rdy_in),
-        .rst         (rst_in),
-        .rdy         (True_Wire),
-        .PC          (Out_PC),
-        .Inst        (CurrentInst),
-        .Inst_Ready  (Fetcher_Ready),
-        .received    (received),
-        .clr         (RS_Stop),
-        .ready       (Processor_ready),
-        .rd          (rd),
-        .vj          (vj),
-        .vk          (vk),
-        .qj          (qj),
-        .qk          (qk),
-        .name        (name),
-        .Imm         (Imm),
-        .success     (success),
-        .ROB_Ready   (ROB_Ready),
-        .ROB_Value   (ROB_Value),
-        .ROB_Addr    (ROB_Addr),
-        .ROB_Tag     (ROB_Tag),
-        .Predict_Jump(Predict_Jump)
+        .clk              (clk_in & rdy_in),
+        .rst              (rst_in),
+        .rdy              (True_Wire),
+        .PC               (Out_PC),
+        .Inst             (CurrentInst),
+        .Inst_Ready       (Fetcher_Ready),
+        .received         (received),
+        .clr              (clear),
+        .ready            (Processor_ready),
+        .rd               (rd),
+        .vj               (vj),
+        .vk               (vk),
+        .qj               (qj),
+        .qk               (qk),
+        .name             (name),
+        .Imm              (Imm),
+        .success          (success),
+        .ROB_Tail         (ROB_Tail),
+        .ROB_Ready        (ROB_Ready),
+        .ROB_Value        (ROB_Value),
+        .ROB_Addr         (ROB_Addr),
+        .ROB_Tag          (ROB_Tag),
+        .Predict_Jump_Bool(Predict_Jump_Bool)
     );
     RS u_RS (
         .clk         (clk_in & rdy_in),
         .rst         (rst_in),
         .rdy         (True_Wire),
-        .clr         (RS_Stop),
-        .Clear_Tag   (RS_Tag),
-        .PC          (RS_PC),
+        .clr         (clear),
         .ready       (ROB_TO_RS_ready),
         .rd          (rd),
         .vj          (vj),
@@ -216,33 +216,35 @@ module cpu (
     );
 
     Rob u_Rob (
-        .clk        (clk_in & rdy_in),
-        .rst        (rst_in),
-        .rdy        (True_Wire),
-        .clr        (RS_Stop),
-        .Clear_Tag  (RS_Tag),
-        .ready      (Processor_ready),
-        .rd         (rd),
-        .name       (name),
-        .Imm        (Imm),
-        .success    (success),
-        .ROB_TO_RS_ready (ROB_TO_RS_ready),
-        .ROB_Valid  (ROB_Valid_Exposed),
-        .ROB_Imm    (ROB_Value_Exposed),
-        .RS_Ready   (ROB_Ready_RS),
-        .RS_A       (ROB_A_RS),
-        .RS_Tag     (RS_Tag),
-        .ROB_Ready  (ROB_Ready),
-        .ROB_Value  (ROB_Value),
-        .ROB_Addr   (ROB_Addr),
-        .ROB_Tag    (ROB_Tag),
-        .RN         (LSB_rn),
-        .WN         (LSB_wn),
-        .Wvalue     (LSB_Wvalue),
-        .Addr       (LSB_addr),
-        .Mem_Success(LSB_ready),
-        .Read_Value (LSB_value),
-        .Tag        (Tag)
+        .clk            (clk_in & rdy_in),
+        .rst            (rst_in),
+        .rdy            (True_Wire),
+        .clr            (clear),
+        .Clr_PC         (Clr_PC),
+        .ready          (Processor_ready),
+        .rd             (rd),
+        .name           (name),
+        .Imm            (Imm),
+        .PC              (vk),
+        .success        (success),
+        .tail           (ROB_Tail),
+        .ROB_TO_RS_ready(ROB_TO_RS_ready),
+        .ROB_Valid      (ROB_Valid_Exposed),
+        .ROB_Imm        (ROB_Value_Exposed),
+        .RS_Ready       (ROB_Ready_RS),
+        .RS_A           (ROB_A_RS),
+        .RS_Tag         (ROB_Addr_RS),
+        .ROB_TO_RS_Tag  (Tag),
+        .ROB_Ready      (ROB_Ready),
+        .ROB_Value      (ROB_Value),
+        .ROB_Addr       (ROB_Addr),
+        .ROB_Tag        (ROB_Tag),
+        .RN             (LSB_rn),
+        .WN             (LSB_wn),
+        .Wvalue         (LSB_Wvalue),
+        .Addr           (LSB_addr),
+        .Mem_Success    (LSB_ready),
+        .Read_Value     (LSB_value)
     );
 
     always @(posedge clk_in) begin

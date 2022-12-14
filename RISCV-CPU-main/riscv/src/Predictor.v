@@ -5,11 +5,12 @@ module Predictor (
     input wire rdy,  // ready signal, pause cpu when low
 
     //From Fetcher
-    input wire Fetcher_Ready,
     input wire [`Data_Bus] PC,
     input wire [`Data_Bus] Inst,
+    //To Fetcher
     output reg [`Data_Bus] Predict_Jump,
-
+    //To RS
+    output reg Predict_Jump_Bool,
     //From RS (Train)
     input wire Train_Ready,
     input wire Train_Result
@@ -18,22 +19,29 @@ module Predictor (
         Predict_Jump = 0;
     end
     integer Imm;
-    always @(PC) begin
+    always @(Inst) begin
         case (Inst[6:0])
             `SB_ALL: begin
-                Imm = {20'b0, Inst[31], Inst[7], Inst[30:25], Inst[11:8]};
+                Imm = {19'b0, Inst[31], Inst[7], Inst[30:25], Inst[11:8], 1'b0};
                 if (1) begin
                     Predict_Jump = Imm + PC;
+                    Predict_Jump_Bool = `True;
                 end else begin
                     Predict_Jump = PC + 4;
+                    Predict_Jump_Bool = `False;
                 end
             end
             `UJ_JAL: begin
-                Imm = {12'b0, Inst[31], Inst[19:12], Inst[20], Inst[30:21]};
+                Imm = {
+                    11'b0, Inst[31], Inst[19:12], Inst[20], Inst[30:21], 1'b0
+                };
+                $display("UJJAL:%x,Imm:%x", Inst, Imm);
                 Predict_Jump = PC + Imm;
+                Predict_Jump_Bool = `True;
             end
             default: begin
                 Predict_Jump = PC + 4;
+                Predict_Jump_Bool = `False;
             end
         endcase
 

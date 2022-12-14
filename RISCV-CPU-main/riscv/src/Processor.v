@@ -32,16 +32,20 @@ module Processor (
     input wire [`Register_Width] ROB_Addr,
     input wire[`ROB_Width] ROB_Tag,//nesscary when deciding whether to remove Tags[Rob_addr]
 
+    input wire [`ROB_Width] ROB_Tail,
     //From Predictor
-    input wire [`Data_Bus] Predict_Jump
+    input wire Predict_Jump_Bool
 );
     reg [31:0] REGISTER[`Reg_Size];
     reg [31:0] Tags[`Reg_Size];
     assign received = success;
-    integer Out_File, Log;
+    integer Out_File, Log, Log_Register;
+    integer cycle;
     initial begin
         Out_File = $fopen("Error.txt", "w");
         Log = $fopen("Log_Processor.txt", "w");
+        Log_Register = $fopen("Register_Log.txt", "w");
+        cycle = 0;
     end
     integer k;
     initial begin
@@ -51,8 +55,25 @@ module Processor (
             Tags[k] = `Empty;
         end
     end
+    always @(posedge clk) begin
+        cycle <= cycle + 1;
+        $fdisplay(Log_Register, "Cycle:%d", cycle);
+        for (k = 0; k < 32; k = k + 1) begin
+            $fwrite(Log_Register, "%4d ", k);
+        end
+        $fdisplay(Log_Register, "\n");
+        for (k = 0; k < 32; k = k + 1) begin
+            $fwrite(Log_Register, "%4d ", REGISTER[k]);
+        end
+        $fdisplay(Log_Register, "\n");
+        for (k = 0; k < 32; k = k + 1) begin
+            $fwrite(Log_Register, "%4d ", Tags[k]);
+        end
+        $fdisplay(Log_Register, "\n");
+
+    end
     always @(negedge clk) begin
-        ready=`False;
+        ready = `False;
     end
     always @(posedge Inst_Ready) begin
         if (rst) begin
@@ -64,6 +85,9 @@ module Processor (
             case (Inst[6:0])
                 `I_LOAD: begin
                     rd = {27'b0, Inst[11:7]};
+                    if (rd != 0) begin
+                        Tags[rd] = {28'b0, ROB_Tail};
+                    end
                     if (Tags[Inst[19:15]] != `Empty) begin
                         qj = {Tags[Inst[19:15]]};
                     end
@@ -71,34 +95,46 @@ module Processor (
                         vj = REGISTER[Inst[19:15]];
                         qj = `Empty;
                     end
-                    Imm   = {20'b0, Inst[31:20]};
+                    qk = `Empty;
+                    Imm = {20'b0, Inst[31:20]};
                     //name = (`I_LOAD << 10) | (Inst[14:12] << 7);
-                    name  = {`I_LOAD, Inst[14:12], 7'b0};
+                    name = {`I_LOAD, Inst[14:12], 7'b0};
                     ready = `True;
                 end
                 `I_BINARY: begin
                     rd = {27'b0, Inst[11:7]};
+                    if (rd != 0) begin
+                        Tags[rd] = {28'b0, ROB_Tail};
+                    end
                     if (Tags[Inst[19:15]] != `Empty) begin
                         qj = Tags[Inst[19:15]];
                     end else begin
                         vj = REGISTER[Inst[19:15]];
                         qj = `Empty;
                     end
-                    Imm   = {20'b0, Inst[31:20]};
-                    name  = {`I_BINARY, Inst[14:12], 7'b0};
+                    qk = `Empty;
+                    Imm = {20'b0, Inst[31:20]};
+                    name = {`I_BINARY, Inst[14:12], 7'b0};
                     ready = `True;
                 end
                 `U_AUIPC: begin
                     rd = {27'b0, Inst[11:7]};
+                    if (rd != 0) begin
+                        Tags[rd] = {28'b0, ROB_Tail};
+                    end
                     Imm = {Inst[31:12], 12'b0};
                     vj = PC;
+                    qk = `Empty;
                     qj = `Empty;
                     name = `AUIPC;
                     ready = `True;
                 end
                 `U_LUI: begin
                     rd = {27'b0, Inst[11:7]};
+                    Tags[rd] = {28'b0, ROB_Tail};
                     Imm = {Inst[31:12], 12'b0};
+                    qk = `Empty;
+                    qj = `Empty;
                     name = `LUI;
                     ready = `True;
                 end
@@ -123,7 +159,13 @@ module Processor (
                     ready = `True;
                 end
                 `R_PRIMARY: begin
-                    rd  = {27'b0, Inst[11:7]};
+                    rd = {27'b0, Inst[11:7]};
+                    if (rd != 0) begin
+                        Tags[rd] = {28'b0, ROB_Tail};
+                    end
+                    if (rd != 0) begin
+                        Tags[rd] = {28'b0, ROB_Tail};
+                    end
                     Imm = 0;
                     if (Tags[Inst[19:15]] != `Empty) begin
                         qj = Tags[Inst[19:15]];
@@ -147,7 +189,9 @@ module Processor (
                     Imm[12]   = Inst[31];
                     Imm[10:5] = Inst[30:25];
                     */
-                    Imm = {20'b0, Inst[31], Inst[7], Inst[30:25], Inst[11:8]};
+                    Imm = {
+                        19'b0, Inst[31], Inst[7], Inst[30:25], Inst[11:8], 1'b0
+                    };
                     if (Tags[Inst[19:15]] != `Empty) begin
                         qj = Tags[Inst[19:15]];
                     end else begin
@@ -160,12 +204,18 @@ module Processor (
                         vk = REGISTER[Inst[24:20]];
                         qk = `Empty;
                     end
-                    rd = {PC[31:1], Predict_Jump == PC};
+                    rd = {PC[31:1], Predict_Jump_Bool};
                     name = {`SB_ALL, Inst[14:12], 7'b0};
                     ready = `True;
                 end
                 `I_JALR: begin
                     rd = {27'b0, Inst[11:7]};
+                    if (rd != 0) begin
+                        Tags[rd] = {28'b0, ROB_Tail};
+                    end
+                    if (rd != 0) begin
+                        Tags[rd] = {28'b0, ROB_Tail};
+                    end
                     if (Tags[Inst[19:15]] != `Empty) begin
                         qj = Tags[Inst[19:15]];
                     end else begin
@@ -181,21 +231,35 @@ module Processor (
                 end
                 `UJ_JAL: begin
                     rd = {27'b0, Inst[11:7]};
-                    vj = PC + 4;  //risky
+                    if (rd != 0) begin
+                        Tags[rd] = {28'b0, ROB_Tail};
+                    end
+                    if (rd != 0) begin
+                        Tags[rd] = {28'b0, ROB_Tail};
+                    end
+                    vk = PC + 4;  //risky
                     qj = `Empty;
+                    qk = `Empty;
                     /*
                     Imm[20] = Inst[31];
                     Imm[10:1] = Inst[30:21];
                     Imm[11] = Inst[20];
                     Imm[19:12] = Inst[19:12];
                     */
-                    Imm = {12'b0, Inst[31], Inst[19:12], Inst[20], Inst[30:21]};
+                    Imm = {
+                        11'b0,
+                        Inst[31],
+                        Inst[19:12],
+                        Inst[20],
+                        Inst[30:21],
+                        1'b0
+                    };
                     name = `JAL;
                     ready = `True;
                 end
 
                 default: begin
-                    ready=`False;
+                    ready = `False;
                     $fdisplay(Out_File, "[Fatal Error] %x", Inst);
                 end
             endcase
@@ -211,6 +275,13 @@ module Processor (
                 Tags[ROB_Addr] = `Empty;
                 REGISTER[ROB_Addr] = ROB_Value;
             end
+        end
+    end
+
+    //Must put under ROB_Ready Block
+    always @(posedge clr) begin
+        for(k=0;k<32;k=k+1)begin
+            Tags[k]=`Empty;
         end
     end
 endmodule

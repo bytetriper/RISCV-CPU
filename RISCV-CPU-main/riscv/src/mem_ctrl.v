@@ -32,6 +32,7 @@ module mem_ctrl (
     integer boss;  //the one who in process of reading(2-->LSB_Write 1 --> IC,0--> LSB)
     reg [`Data_Bus] data;
     reg [`Data_Bus] TmpAddr;
+    integer Log_File, cycle;
     initial begin
         data = 0;
         TmpAddr = 0;
@@ -42,18 +43,37 @@ module mem_ctrl (
         LSB_ready = `True;
         LSB_value = 0;
         boss = OffWork;
+        Log_File = $fopen("Mem_Ctrl_Log", "w");
+        cycle = 0;
     end
-    always @(Reading) begin  //indicating Reading 5 -> 0
-        if (Reading == 0) begin
-            if (boss == IC) begin
-                IC_ready = `True;
+    always @(posedge clk) begin
+        cycle <= cycle + 1;
+        $fdisplay(Log_File, "Cycle:%d", cycle);
+        case (boss)
+            OffWork: begin
+                $fdisplay(Log_File, "State:Offwork");
             end
-            if (boss == LSB_r) begin
-                LSB_ready = `True;
+            IC: begin
+                $fdisplay(Log_File, "State:IC_Reading");
             end
-            if (boss == LSB_w) begin
-                LSB_ready = `True;
+            LSB_w: begin
+                $fdisplay(Log_File, "State:LSB_Writing");
             end
+            LSB_r: begin
+                $fdisplay(Log_File, "State:LSB_Reading");
+            end
+        endcase
+    end
+    always @(Reading) begin  
+        if (Reading == 0) begin //indicating Reading 5 -> 0
+            case (boss)
+                IC: begin
+                    IC_ready = `True;
+                end
+                LSB_r, LSB_w: begin
+                    LSB_ready = `True;
+                end
+            endcase
             boss = OffWork;
         end
     end
@@ -82,7 +102,7 @@ module mem_ctrl (
     always @(posedge clk) begin
         if (rst) begin  //Reset EveryThing!
 
-        end else if (boss == 1 ) begin
+        end else if (boss == 1) begin
             case (Reading)
                 0: begin
                     mem_a   <= IC_addr;
@@ -123,7 +143,7 @@ module mem_ctrl (
                 end
 
             endcase
-        end else if (boss == LSB_r ) begin
+        end else if (boss == LSB_r) begin
             case (Reading)
                 0: begin
                     mem_a   <= LSB_addr;
@@ -193,7 +213,6 @@ module mem_ctrl (
                     mem_a   <= TmpAddr;
                     TmpAddr <= TmpAddr + 1;
                     Reading <= Reading + 1;
-
                 end
                 4: begin
                     mem_wr  <= `LOW;  // Stop Writing Immediately

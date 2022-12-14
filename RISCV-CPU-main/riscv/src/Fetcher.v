@@ -26,11 +26,10 @@ module Fetcher (
     //From Processor
     input wire success,
     //Exposed
-    output wire [`Data_Bus] Out_PC
+    output reg [`Data_Bus] Out_PC
 );
     reg [`Data_Bus] PC ;
     reg [`Data_Bus] Inst_Buffer;
-    assign Out_PC = PC;
     initial begin
         ready = `False;
         rn = `False;
@@ -44,20 +43,24 @@ module Fetcher (
         if (rst) begin
 
         end else if (clr) begin
-            
+            PC<=Target_PC;
+            rn<=`True;
+            addr<=Target_PC;
+            Out_PC<=0;
+            ready<=`False;
         end else if (Read_ready) begin
-            Inst_Buffer <= Inst;
             if (success) begin
                 rn <= `True;
                 addr <= Predict_Jump;
                 ready <= `True;
-                CurrentInst <= Inst_Buffer;
+                CurrentInst <= Inst;
                 PC <= Predict_Jump;
+                Out_PC<= PC;
             end else begin
                 rn <= `False;
             end
         end else begin
-            ready <= `False;
+            
         end
     end
 endmodule

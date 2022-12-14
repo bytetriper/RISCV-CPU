@@ -6,18 +6,18 @@ module Rob (
 
 
     //From Flow_Control
-    input wire clr,
-    input wire [3:0] Clear_Tag,
+    output reg clr,
+    output reg [`Data_Bus] Clr_PC,
 
     //From Processor
     input wire ready,
     input wire [`Data_Bus] rd,
     input wire [16:0] name,
     input wire [`Data_Bus] Imm,
-
+    input wire [`Data_Bus] PC,
     //To Processor
     output wire success,
-
+    output wire [`ROB_Width] tail,
     //Public
     output wire [`ROB_Size] ROB_Valid,
     output wire [511:0] ROB_Imm,
@@ -29,6 +29,7 @@ module Rob (
 
     //To RS
     output reg ROB_TO_RS_ready,
+    output reg [3:0] ROB_TO_RS_Tag,
     //To Register(Processor)
     output reg ROB_Ready,
     output reg [`Data_Bus] ROB_Value,
@@ -41,21 +42,19 @@ module Rob (
     output reg  [`Data_Bus] Wvalue,
     output reg  [`Data_Bus] Addr,
     input  wire             Mem_Success,
-    input  wire [`Data_Bus] Read_Value,
-
-    //Exposed
-    output wire [`ROB_Width] Tag
+    input  wire [`Data_Bus] Read_Value
 );
     reg [`Data_Bus] Rd[`ROB_Size];
     reg [16:0] Name[`ROB_Size];
     reg [`Data_Bus] A[`ROB_Size];
+    reg [`Data_Bus] ROB_PC[`ROB_Size];
     reg Valid[`ROB_Size];
     reg Read_Able[`ROB_Size];
-    reg [`ROB_Width] Tail = 1;  //To automatic overflow
-    reg [`ROB_Width] Head = 0;  //To automatic overflow
+    reg [`ROB_Width] Tail;  //To automatic overflow
+    reg [`ROB_Width] Head;  //To automatic overflow
+    assign tail = Tail;
     //add inst from Processor
-    assign Tag = Tail;
-    assign success = (Head != Tail);
+    assign success = (Head != Tail + 1);
     genvar i;
     generate
         for (i = 0; i < 16; i = i + 1) begin
@@ -64,11 +63,22 @@ module Rob (
         end
     endgenerate
     wire HasRead;
-    generate
-        for (i = 0; i < 16; i = i + 1) begin
-            assign HasRead = HasRead | (Read_Able[i]);
-        end
-    endgenerate
+    assign HasRead=Read_Able[0]
+                    |Read_Able[1]
+                        |Read_Able[2]
+                            |Read_Able[3]
+                                |Read_Able[4]
+                                    |Read_Able[5]
+                                        |Read_Able[6]
+                                            |Read_Able[7]
+                                                |Read_Able[8]
+                                                    |Read_Able[9]
+                                                        |Read_Able[10]
+                                                            |Read_Able[11]
+                                                                |Read_Able[12]
+                                                                    |Read_Able[13]
+                                                                        |Read_Able[14]
+                                                                            |Read_Able[15];
     wire[`ROB_Width] Read_Tag =  Read_Able[0] ? 0 :
                                     Read_Able[1] ? 1 :
                                         Read_Able[2] ? 2 : 
@@ -85,6 +95,7 @@ module Rob (
                                                                                     Read_Able[13] ? 13 :
                                                                                         Read_Able[14] ? 14 : 
                                                                                             Read_Able[15] ? 15 :0;
+    integer Log_File, cycle;
     integer k;
     initial begin
         for (k = 0; k < 16; k = k + 1) begin
@@ -93,26 +104,46 @@ module Rob (
         end
         RN = `False;
         WN = `False;
+        Head = 1;
+        Tail = 1;
         Wvalue = 0;
         Addr = 0;
         ROB_Ready = `False;
         ROB_Value = 0;
         ROB_Addr = 0;
         ROB_Tag = 0;
+        ROB_TO_RS_ready = `False;
+        clr = `False;
+        Log_File = $fopen("ROB_LOG.txt", "w");
+        cycle = 0;
     end
-
+    reg [3:0] w;
+    always @(posedge clk) begin
+        cycle = cycle + 1;
+        $fdisplay(Log_File, "Cycle:%d", cycle);
+        for (w = Head; w != Tail; w = w + 1) begin
+            $fdisplay(Log_File,
+                      "[%d]Name:%x Rd:%d A:%x Readable:%d Valid:%d PC:%x", w,
+                      Name[w], Rd[w], A[w], Read_Able[w], Valid[w], ROB_PC[w]);
+        end
+    end
+    always @(posedge clr) begin
+        $fdisplay(Log_File, "Cycle:%d", cycle);
+        $fdisplay(Log_File,"Clear Signal Activated; PC:%x ",Clr_PC);
+    end
     always @(posedge ready) begin
         if (rst) begin
 
         end else if (ready) begin
-            if (Head == Tail) begin
+            if (Head == Tail + 1) begin
                 ROB_TO_RS_ready = `False;
             end else begin
                 Rd[Tail] = rd;
                 Name[Tail] = name;
-                A[Tail] = Imm;
+                ROB_PC[Tail] = PC;
                 Valid[Tail] = `False;
                 ROB_TO_RS_ready = `True;
+                ROB_TO_RS_Tag = Tail;
                 Tail = Tail + 1;
             end
         end else begin
@@ -120,7 +151,7 @@ module Rob (
         end
     end
     always @(negedge clk) begin//To make sure New Insts always come with a posedge ROB_TO_RS_ready
-        ROB_TO_RS_ready=`False;
+        ROB_TO_RS_ready = `False;
     end
     always @(posedge clk) begin
         if (rst) begin
@@ -128,10 +159,12 @@ module Rob (
         end else begin
             if(Valid[Head]&&(Name[Head]==`SB||Name[Head]==`SW||Name[Head]==`SH))begin
                 WN <= `True;
+                RN <= `False;
                 Wvalue <= A[Head];
                 Addr <= Rd[Head];  //TODO CHECK
             end else if (HasRead) begin
                 RN   <= `True;
+                WN   <= `False;
                 Addr <= A[Read_Tag];
             end else begin
                 WN <= `False;
@@ -144,17 +177,37 @@ module Rob (
         if (rst) begin
         end else if (Valid[Head]) begin
             case (Name[Head])
-                `LB, `LH, `LW, `LBU, `LHU, `LWU: begin
-
-                end
-                `SB, `SH, `SW: begin
-
-                end
                 `BEQ, `BNE, `BLT, `BGE, `BLTU, `BGEU: begin
-
+                    if (A[Head][0] ^ Rd[Head][0]) begin
+                        clr <= `True;
+                        if (A[Head][0]) begin
+                            Clr_PC <= {Rd[Head][31:1], 1'b0};
+                        end else begin
+                            Clr_PC <= {A[Head][31:1], 1'b0};
+                        end
+                        Head <= Tail;  //Clear All
+                    end else begin
+                        ROB_Ready <= `False;
+                        ROB_Addr <= `Empty;
+                        ROB_Tag <= Head;
+                        Head <= Head + 1;
+                    end
                 end
-                `JALR, `JAL: begin
-
+                `JALR: begin
+                    clr <= `True;
+                    Clr_PC <= {A[Head][31:1], 1'b0};
+                    ROB_Ready <= `True;
+                    ROB_Addr <= Rd[Head][4:0];
+                    ROB_Tag <= Head;
+                    ROB_Value <= ROB_PC[Head];
+                    Head <= Tail;  //Clear All
+                end
+                `JAL: begin
+                    ROB_Ready <= `True;
+                    ROB_Value <= ROB_PC[Head];
+                    ROB_Addr <= Rd[Head][4:0];
+                    ROB_Tag <= Head;
+                    Head <= Head + 1;
                 end
                 default: begin
                     ROB_Ready <= `True;
@@ -168,6 +221,14 @@ module Rob (
             ROB_Ready <= `False;
         end
     end
+    always @(negedge clk) begin  //Make sure A posedge Always happens
+        ROB_Ready <= `False;
+    end
+    always @(posedge clk) begin  //Make Sure Clr always last for only one cycle
+        if (clr) begin
+            clr <= `False;
+        end
+    end
     always @(posedge clk) begin
         if (rst) begin
 
@@ -178,13 +239,13 @@ module Rob (
                 end else if (HasRead) begin
                     if (Read_Tag == Head) begin
                         Head <= Head + 1;
-                        Valid[Head] <= `True;
                         ROB_Ready <= `True;
                         ROB_Addr <= Rd[Head][4:0];
                         ROB_Tag <= Head;
                         ROB_Value <= Read_Value;
                     end else begin
                         A[Head] <= Read_Value;
+                        Valid[Head] <= `True;
                     end
                 end else begin
                     //$display("Mem_success Error");
@@ -200,18 +261,24 @@ module Rob (
             //assert occupied[RS_Tag] to be true here
             A[RS_Tag] <= RS_A;
             Valid[RS_Tag] <= `True;
-            case (Name[RS_Tag])
-                `LB, `LH, `LW, `LBU, `LHU, `LWU: begin
-                    Read_Able[RS_Tag] <= `True;
-                end
-            endcase
         end
     end
-    always @(posedge clr) begin
+    always @(negedge clk) begin  //Overclock
         if (rst) begin
 
-        end else if (clr) begin
-            Tail = Clear_Tag; //clear_tag and everything after it should be released
+        end else if (RS_Ready) begin
+            case (Name[RS_Tag])
+                `LB, `LH, `LW, `LBU, `LHU, `LWU: begin
+                    Read_Able[RS_Tag] = (RS_A != 32'h3000);
+                    for (w = Head; w != RS_Tag; w++) begin
+                        case (Name[w])
+                            `SB, `SH, `SW: begin
+                                Read_Able[RS_Tag]=Read_Able[RS_Tag]&Valid[w]&(A[w]==RS_A);
+                            end
+                        endcase
+                    end
+                end
+            endcase
         end
     end
 endmodule
