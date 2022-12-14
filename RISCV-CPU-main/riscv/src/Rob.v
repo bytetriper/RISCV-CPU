@@ -26,6 +26,7 @@ module Rob (
     input wire RS_Ready,
     input wire [`Data_Bus] RS_A,
     input wire [`ROB_Width] RS_Tag,
+    input wire [`Data_Bus] RS_Rd, 
 
     //To RS
     output reg ROB_TO_RS_ready,
@@ -97,6 +98,7 @@ module Rob (
                                                                                             Read_Able[15] ? 15 :0;
     integer Log_File, cycle;
     integer k;
+    reg [4:0] Working_ROB;  //ROB_Width+1
     initial begin
         for (k = 0; k < 16; k = k + 1) begin
             Valid[k] = 0;
@@ -114,10 +116,12 @@ module Rob (
         ROB_Tag = 0;
         ROB_TO_RS_ready = `False;
         clr = `False;
+        Working_ROB = 16;
         Log_File = $fopen("ROB_LOG.txt", "w");
         cycle = 0;
     end
     reg [3:0] w;
+
     always @(posedge clk) begin
         cycle = cycle + 1;
         $fdisplay(Log_File, "Cycle:%d", cycle);
@@ -129,7 +133,7 @@ module Rob (
     end
     always @(posedge clr) begin
         $fdisplay(Log_File, "Cycle:%d", cycle);
-        $fdisplay(Log_File,"Clear Signal Activated; PC:%x ",Clr_PC);
+        $fdisplay(Log_File, "Clear Signal Activated; PC:%x ", Clr_PC);
     end
     always @(posedge ready) begin
         if (rst) begin
@@ -153,30 +157,17 @@ module Rob (
     always @(negedge clk) begin//To make sure New Insts always come with a posedge ROB_TO_RS_ready
         ROB_TO_RS_ready = `False;
     end
-    always @(posedge clk) begin
-        if (rst) begin
-
-        end else begin
-            if(Valid[Head]&&(Name[Head]==`SB||Name[Head]==`SW||Name[Head]==`SH))begin
-                WN <= `True;
-                RN <= `False;
-                Wvalue <= A[Head];
-                Addr <= Rd[Head];  //TODO CHECK
-            end else if (HasRead) begin
-                RN   <= `True;
-                WN   <= `False;
-                Addr <= A[Read_Tag];
-            end else begin
-                WN <= `False;
-                RN <= `False;
-            end
-        end
-    end
     //Push
     always @(posedge clk) begin
         if (rst) begin
         end else if (Valid[Head]) begin
             case (Name[Head])
+                `LB, `LH, `LW, `LBU, `LHU, `LWU: begin
+
+                end
+                `SB, `SH, `SW: begin
+
+                end
                 `BEQ, `BNE, `BLT, `BGE, `BLTU, `BGEU: begin
                     if (A[Head][0] ^ Rd[Head][0]) begin
                         clr <= `True;
@@ -235,32 +226,49 @@ module Rob (
         end else begin
             if (Mem_Success) begin
                 if(Valid[Head]&&(Name[Head]==`SB||Name[Head]==`SW||Name[Head]==`SH))begin
-                    Head <= Head + 1;
+                    WN <= `True;
+                    RN <= `False;
+                    Wvalue <= A[Head];
+                    Addr <= Rd[Head];
+                    Working_ROB <= {1'b0, Head};
                 end else if (HasRead) begin
-                    if (Read_Tag == Head) begin
-                        Head <= Head + 1;
-                        ROB_Ready <= `True;
-                        ROB_Addr <= Rd[Head][4:0];
-                        ROB_Tag <= Head;
-                        ROB_Value <= Read_Value;
-                    end else begin
-                        A[Head] <= Read_Value;
-                        Valid[Head] <= `True;
-                    end
+                    WN <= `False;
+                    RN <= `True;
+                    Addr <= A[Read_Tag];
+                    Working_ROB <= {1'b0, Read_Tag};
                 end else begin
-                    //$display("Mem_success Error");
+                    WN <= `False;
+                    RN <= `False;
+                    Working_ROB <= 16;
+                end
+                if (Working_ROB != 16) begin
+                    case (Name[Working_ROB[3:0]])
+                        `SB, `SW, `SH: begin
+                        end
+                        `LB, `LH, `LW, `LBU, `LHU, `LWU: begin
+                            A[Working_ROB[3:0]] <= Read_Value;
+                            Read_Able[Working_ROB[3:0]]<=`False;//Already Read
+                        end
+                        default:begin
+                            $display("[Fatal Error]:Wrong Memory at ROB:%d",Working_ROB[3:0]);
+                        end
+                    endcase
+                    if(Working_ROB[3:0]==Head)begin//Commit
+                        Head<=Head+1;
+                    end
                 end
             end
         end
     end
 
-    //Commit from RS
+    //Issue from RS
     always @(posedge clk) begin
         if (rst) begin
         end else if (RS_Ready) begin
             //assert occupied[RS_Tag] to be true here
             A[RS_Tag] <= RS_A;
             Valid[RS_Tag] <= `True;
+            Rd[RS_Tag]<= RS_Rd;
         end
     end
     always @(negedge clk) begin  //Overclock

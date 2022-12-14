@@ -23,7 +23,7 @@ module RS (
     output reg ROB_Ready,  //log(RS_Size)=log(16)=4
     output reg [`ROB_Width] ROB_Addr,
     output reg [`Data_Bus] ROB_A,
-
+    output reg [`Data_Bus] ROB_Rd,//SP:For Load And Store
     //From ROB
     input wire [`ROB_Size] ROB_Valid,
     input wire [511:0] ROB_Value,  //32*ROB_Size-1:0
@@ -80,6 +80,7 @@ module RS (
     reg [`RS_Width] Working_RS;
     wire HasFree;
     wire HasValid;
+    wire [16:0] Name_RS_TEST=Name[Working_RS];
     wire [`RS_Width] valid_tag, free_tag;
     assign free_tag =  ~Busy[0]?0:
                             ~Busy[1]?1:
@@ -247,6 +248,11 @@ module RS (
                     RV <= A[valid_tag];
                     Op <= `Add;
                     //A[IsValid]<=A[IsValid]+Vj[IsValid];
+                end
+                `LUI:begin
+                    LV<=0;
+                    RV<=A[valid_tag];
+                    Op<=`Add;
                 end
                 `ADD:begin
                     LV<=Vj[valid_tag];
@@ -416,7 +422,6 @@ module RS (
 
         end else if (ALU_success) begin  //COMMIT
             if (Busy[Working_RS]) begin
-                A[Working_RS] <= result;
                 Busy[Working_RS] <= `False;
                 Valid[Working_RS] <= `False;
                 //Train Predictor
@@ -435,31 +440,43 @@ module RS (
                         ROB_Ready <= `True;
                         ROB_Addr <= Tag[Working_RS];
                         ROB_A <= result;
+                        ROB_Rd<=Rd[Working_RS];
+                    end
+                    `LUI:begin
+                        ROB_Ready <= `True;
+                        ROB_Addr <= Tag[Working_RS];
+                        ROB_A <= result;
+                        ROB_Rd<=Rd[Working_RS];
                     end
                     `SB, `SH, `SW: begin
                         ROB_Ready <= `True;
                         ROB_Addr <= Tag[Working_RS];
-                        ROB_A <= result;
+                        ROB_A <= Vk[Working_RS];
+                        ROB_Rd<= result;
                     end
                     `BEQ, `BNE, `BLT, `BGE, `BLTU, `BGEU: begin
                         ROB_Ready <= `True;
                         ROB_Addr <= Tag[Working_RS];
                         ROB_A <= result;
+                        ROB_Rd<=Rd[Working_RS];
                     end
                     `JALR: begin
                         ROB_A <= result;  //SP
                         ROB_Ready <= `True;
                         ROB_Addr <= Tag[Working_RS];
+                        ROB_Rd<=Rd[Working_RS];
                     end
                     `JAL: begin
                         ROB_A <= result;  //SP
                         ROB_Ready <= `True;
                         ROB_Addr <= Tag[Working_RS];
+                        ROB_Rd<=Rd[Working_RS];
                     end
                     default: begin
                         ROB_Ready <= `True;
                         ROB_Addr <= Tag[Working_RS];
                         ROB_A <= result;
+                        ROB_Rd<=Rd[Working_RS];
                     end
                 endcase
                 //Broadcast
@@ -481,7 +498,7 @@ module RS (
             Rd[free_tag] = rd;
             Tag[free_tag] = tag;
             Name[free_tag] = name;
-            Valid[free_tag] = `False;
+            
             if (qj != `Empty) begin
                 if (ROB_Valid[qj]) begin
                     Vj[free_tag] = Tmp_Value[qj];
@@ -494,6 +511,7 @@ module RS (
                     Qk[free_tag] = `Empty;
                 end
             end
+            Valid[free_tag] = `False;
             Busy[free_tag] = `True;  //LAST indeed
         end
     end

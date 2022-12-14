@@ -30,6 +30,7 @@ module mem_ctrl (
     integer BeZero = 1;
     reg startable = `True;  //is mem_ctrl occupied or not
     integer boss;  //the one who in process of reading(2-->LSB_Write 1 --> IC,0--> LSB)
+    integer PreviousBoss;
     reg [`Data_Bus] data;
     reg [`Data_Bus] TmpAddr;
     integer Log_File, cycle;
@@ -45,6 +46,7 @@ module mem_ctrl (
         boss = OffWork;
         Log_File = $fopen("Mem_Ctrl_Log", "w");
         cycle = 0;
+        PreviousBoss=0;
     end
     always @(posedge clk) begin
         cycle <= cycle + 1;
@@ -64,8 +66,8 @@ module mem_ctrl (
             end
         endcase
     end
-    always @(Reading) begin  
-        if (Reading == 0) begin //indicating Reading 5 -> 0
+    always @(Reading) begin
+        if (Reading == 0) begin  //indicating Reading 5 -> 0
             case (boss)
                 IC: begin
                     IC_ready = `True;
@@ -74,29 +76,34 @@ module mem_ctrl (
                     LSB_ready = `True;
                 end
             endcase
-            boss = OffWork;
+            
+            boss=OffWork;
         end
+        
+    end
+    always @(negedge clk) begin
+        if(boss==OffWork)begin
+            if (LSB_wn&&(PreviousBoss!=LSB_w)) begin//Make Sure ROB has enough time to react
+                boss = LSB_w;
+            end else if (LSB_rn&&(PreviousBoss!=LSB_r)) begin//Make Sure ROB has enough time to react
+                boss = LSB_r;
+            end else if (IC_rn) begin
+                boss = IC;
+            end
+        end
+        PreviousBoss=boss;
     end
     always @(IC_addr) begin
         if (IC_rn) begin
             IC_ready = `False;
-            if (boss == OffWork) begin
-                boss = IC;
-            end
         end
     end
     always @(LSB_addr) begin
         if (LSB_rn) begin
             LSB_ready = `False;
-            if (boss == OffWork) begin
-                boss = LSB_r;
-            end
         end
         if (LSB_wn) begin
             LSB_ready = `False;
-            if (boss == OffWork) begin
-                boss = LSB_w;
-            end
         end
     end
     always @(posedge clk) begin

@@ -15,11 +15,8 @@ Disassembly of section .rom:
 Disassembly of section .text.startup:
 
 00001000 <main>:
-    1000:	000307b7          	lui	a5,0x30
-    1004:	03000713          	li	a4,48
-    1008:	00e78023          	sb	a4,0(a5) # 30000 <__heap_start+0x2e000>
-    100c:	00000513          	li	a0,0
-    1010:	00008067          	ret
+    1000:	00200513          	li	a0,2
+    1004:	00008067          	ret
 
 Disassembly of section .riscv.attributes:
 

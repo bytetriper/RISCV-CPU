@@ -46,7 +46,7 @@ module Fetcher (
             PC<=Target_PC;
             rn<=`True;
             addr<=Target_PC;
-            Out_PC<=0;
+            Out_PC<=Target_PC;
             ready<=`False;
         end else if (Read_ready) begin
             if (success) begin

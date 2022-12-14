@@ -71,6 +71,7 @@ module cpu (
     wire                                   ROB_TO_RS_ready;
     wire                                   ROB_Ready_RS;
     wire                [     `ROB_Width]  ROB_Addr_RS;
+    wire                [      `Data_Bus]  ROB_Rd_RS;
     wire                [      `Data_Bus]  ROB_A_RS;
     wire                [     `ROB_Width]  ROB_Tag;
     wire                [      `Data_Bus]  ROB_A;
@@ -86,8 +87,8 @@ module cpu (
     wire                                   Train_Ready;
     wire                                   Train_Result;
 
-   
-    wire[`Data_Bus]            Clr_PC;
+
+    wire                [      `Data_Bus]  Clr_PC;
     wire                [     `ROB_Width]  Tag;
     wire                                   clear;
     mem_ctrl u_mem_ctrl (
@@ -191,6 +192,7 @@ module cpu (
         .ROB_Ready   (ROB_Ready_RS),
         .ROB_Addr    (ROB_Addr_RS),
         .ROB_A       (ROB_A_RS),
+        .ROB_Rd      (ROB_Rd_RS),
         .ROB_Valid   (ROB_Valid_Exposed),
         .ROB_Value   (ROB_Value_Exposed),
         .ALU_ready   (ALU_ready),
@@ -225,7 +227,7 @@ module cpu (
         .rd             (rd),
         .name           (name),
         .Imm            (Imm),
-        .PC              (vk),
+        .PC             (vk),
         .success        (success),
         .tail           (ROB_Tail),
         .ROB_TO_RS_ready(ROB_TO_RS_ready),
@@ -234,6 +236,7 @@ module cpu (
         .RS_Ready       (ROB_Ready_RS),
         .RS_A           (ROB_A_RS),
         .RS_Tag         (ROB_Addr_RS),
+        .RS_Rd          (ROB_Rd_RS),
         .ROB_TO_RS_Tag  (Tag),
         .ROB_Ready      (ROB_Ready),
         .ROB_Value      (ROB_Value),
