@@ -22,6 +22,7 @@ module mem_ctrl (
     input  wire             LSB_wn,      //Write_enable
     input  wire [`Data_Bus] LSB_Wvalue,
     input  wire [`Data_Bus] LSB_addr,
+    input  wire [     16:0] Inst_Name,
     output reg              LSB_ready,
     output reg  [`Data_Bus] LSB_value
 );
@@ -46,7 +47,7 @@ module mem_ctrl (
         boss = OffWork;
         Log_File = $fopen("Mem_Ctrl_Log", "w");
         cycle = 0;
-        PreviousBoss=0;
+        PreviousBoss = 0;
     end
     always @(posedge clk) begin
         cycle <= cycle + 1;
@@ -76,13 +77,13 @@ module mem_ctrl (
                     LSB_ready = `True;
                 end
             endcase
-            
-            boss=OffWork;
+
+            boss = OffWork;
         end
-        
+
     end
     always @(negedge clk) begin
-        if(boss==OffWork)begin
+        if (boss == OffWork) begin
             if (LSB_wn&&(PreviousBoss!=LSB_w)) begin//Make Sure ROB has enough time to react
                 boss = LSB_w;
             end else if (LSB_rn&&(PreviousBoss!=LSB_r)) begin//Make Sure ROB has enough time to react
@@ -91,7 +92,7 @@ module mem_ctrl (
                 boss = IC;
             end
         end
-        PreviousBoss=boss;
+        PreviousBoss = boss;
     end
     always @(IC_addr) begin
         if (IC_rn) begin
@@ -112,11 +113,11 @@ module mem_ctrl (
         end else if (boss == 1) begin
             case (Reading)
                 0: begin
-                    mem_a   <= IC_addr;
-                    mem_wr  <= `LOW;
+                    mem_a <= IC_addr;
+                    mem_wr <= `LOW;
                     TmpAddr <= IC_addr + 1;
                     Reading <= Reading + 1;
-
+                    data <= 0;
                 end
                 1: begin
                     mem_a   <= TmpAddr;
@@ -153,29 +154,42 @@ module mem_ctrl (
         end else if (boss == LSB_r) begin
             case (Reading)
                 0: begin
-                    mem_a   <= LSB_addr;
-                    mem_wr  <= `LOW;
+                    mem_a <= LSB_addr;
+                    mem_wr <= `LOW;
                     Reading <= Reading + 1;
                     TmpAddr <= LSB_addr + 1;
+                    data <= 0;
                 end
                 1: begin
-                    mem_a   <= TmpAddr;
+                    if (Inst_Name != `LB && Inst_Name != `LBU) begin
+                        mem_a <= TmpAddr;
+                    end
                     TmpAddr <= TmpAddr + 1;
                     Reading <= Reading + 1;
 
                 end
                 2: begin
                     data[7:0] <= mem_dout;
-                    mem_a <= TmpAddr;
-                    TmpAddr <= TmpAddr + 1;
-                    Reading <= Reading + 1;
+                    if (Inst_Name != `LB && Inst_Name != `LBU) begin
+                        if (Inst_Name != `LH && Inst_Name != `LHU) begin
+                            mem_a <= TmpAddr;
+                        end
+                        TmpAddr <= TmpAddr + 1;
+                        Reading <= Reading + 1;
+                    end else begin
+                        Reading <= 0;
+                    end
 
                 end
                 3: begin
                     data[15:8] <= mem_dout;
-                    mem_a <= TmpAddr;
-                    TmpAddr <= TmpAddr + 1;
-                    Reading <= Reading + 1;
+                    if (Inst_Name != `LH && Inst_Name != `LHU) begin
+                        mem_a   <= TmpAddr;
+                        TmpAddr <= TmpAddr + 1;
+                        Reading <= Reading + 1;
+                    end else begin
+                        Reading <= 0;
+                    end
 
                 end
                 4: begin
@@ -194,26 +208,32 @@ module mem_ctrl (
         end else if (boss == LSB_w) begin
             case (Reading)
                 0: begin
-                    mem_a   <= LSB_addr;
-                    mem_wr  <= `HIGH;
+                    mem_a <= LSB_addr;
+                    mem_wr <= `HIGH;
                     mem_din <= LSB_Wvalue[7:0];
                     TmpAddr <= LSB_addr + 1;
                     Reading <= Reading + 1;
-
+                    data <= 0;
                 end
                 1: begin
-                    mem_a   <= TmpAddr;
-                    TmpAddr <= TmpAddr + 1;
-                    mem_din <= LSB_Wvalue[15:8];
-                    Reading <= Reading + 1;
-
+                    if (Inst_Name != `SB) begin
+                        mem_a   <= TmpAddr;
+                        TmpAddr <= TmpAddr + 1;
+                        mem_din <= LSB_Wvalue[15:8];
+                        Reading <= Reading + 1;
+                    end else begin
+                        Reading <= 0;
+                    end
                 end
                 2: begin
+                    if (Inst_Name != `SH) begin
                     mem_din <= LSB_Wvalue[23:16];
                     mem_a   <= TmpAddr;
                     TmpAddr <= TmpAddr + 1;
                     Reading <= Reading + 1;
-
+                    end else begin
+                        Reading<=0;
+                    end
                 end
                 3: begin
                     mem_din <= LSB_Wvalue[31:24];

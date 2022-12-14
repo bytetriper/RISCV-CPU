@@ -1,5 +1,2 @@
 [Fatal Error] xxxxxxxx
-[Fatal Error] 00000000
-[Fatal Error] 00000000
-[Fatal Error] 00000000
-[Fatal Error] 00000000
+[Fatal Error] xxxxxxxx

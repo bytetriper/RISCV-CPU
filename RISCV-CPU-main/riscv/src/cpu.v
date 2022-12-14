@@ -39,6 +39,7 @@ module cpu (
     wire                [      `Data_Bus]  LSB_addr;
     wire                                   LSB_ready;
     wire                [      `Data_Bus]  LSB_value;
+    wire                [           16:0 ] Inst_Name;
 
     wire                                   rn;
     wire                [      `Data_Bus]  Inst;

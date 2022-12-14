@@ -1,6 +1,21 @@
 ## A Simplified RISCV-CPU Design
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
 
+## 目前只能保证正确运行：
+
+
+定义正确运行：所有指令和寄存器/内存都正确
+```cpp
+int main()
+{
+  int a=x;//x be some constant
+  return a;
+}
+```
+
+## CPU架构图
+
+
 <font face="KAI"></font>
 ```mermaid
 

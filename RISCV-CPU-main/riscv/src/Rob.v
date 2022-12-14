@@ -4,7 +4,7 @@ module Rob (
     input wire rst,  // reset signal
     input wire rdy,  // ready signal, pause cpu when low
 
-
+    //TODO Read Dependency
     //From Flow_Control
     output reg clr,
     output reg [`Data_Bus] Clr_PC,
@@ -26,7 +26,7 @@ module Rob (
     input wire RS_Ready,
     input wire [`Data_Bus] RS_A,
     input wire [`ROB_Width] RS_Tag,
-    input wire [`Data_Bus] RS_Rd, 
+    input wire [`Data_Bus] RS_Rd,
 
     //To RS
     output reg ROB_TO_RS_ready,
@@ -42,6 +42,7 @@ module Rob (
     output reg              WN,
     output reg  [`Data_Bus] Wvalue,
     output reg  [`Data_Bus] Addr,
+    output reg  [     16:0] Inst_Name,
     input  wire             Mem_Success,
     input  wire [`Data_Bus] Read_Value
 );
@@ -230,11 +231,13 @@ module Rob (
                     RN <= `False;
                     Wvalue <= A[Head];
                     Addr <= Rd[Head];
+                    Inst_Name <= Name[Head];
                     Working_ROB <= {1'b0, Head};
                 end else if (HasRead) begin
                     WN <= `False;
                     RN <= `True;
                     Addr <= A[Read_Tag];
+                    Inst_Name <= Name[Head];
                     Working_ROB <= {1'b0, Read_Tag};
                 end else begin
                     WN <= `False;
@@ -249,12 +252,13 @@ module Rob (
                             A[Working_ROB[3:0]] <= Read_Value;
                             Read_Able[Working_ROB[3:0]]<=`False;//Already Read
                         end
-                        default:begin
-                            $display("[Fatal Error]:Wrong Memory at ROB:%d",Working_ROB[3:0]);
+                        default: begin
+                            $display("[Fatal Error]:Wrong Memory at ROB:%d",
+                                     Working_ROB[3:0]);
                         end
                     endcase
-                    if(Working_ROB[3:0]==Head)begin//Commit
-                        Head<=Head+1;
+                    if (Working_ROB[3:0] == Head) begin  //Commit
+                        Head <= Head + 1;
                     end
                 end
             end
@@ -268,7 +272,7 @@ module Rob (
             //assert occupied[RS_Tag] to be true here
             A[RS_Tag] <= RS_A;
             Valid[RS_Tag] <= `True;
-            Rd[RS_Tag]<= RS_Rd;
+            Rd[RS_Tag] <= RS_Rd;
         end
     end
     always @(negedge clk) begin  //Overclock
@@ -277,7 +281,7 @@ module Rob (
         end else if (RS_Ready) begin
             case (Name[RS_Tag])
                 `LB, `LH, `LW, `LBU, `LHU, `LWU: begin
-                    Read_Able[RS_Tag] = (RS_A != 32'h3000);
+                    Read_Able[RS_Tag] = (RS_A != 32'h30000);
                     for (w = Head; w != RS_Tag; w++) begin
                         case (Name[w])
                             `SB, `SH, `SW: begin
