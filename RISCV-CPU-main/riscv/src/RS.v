@@ -217,7 +217,7 @@ module RS (
             if (Busy[j]) begin
                 $fdisplay(
                     Log_File,
-                    "[%d]Valid:%d,Name:%d,Tag:%d,qj:%d,qk:%d,vj:0x%x,vk:0x%x rd:%d A:0x%x",
+                    "[%d]Valid:%d,Name:%x,Tag:%d,qj:%d,qk:%d,vj:0x%x,vk:0x%x rd:%d A:0x%x",
                     j, Valid[j], Name[j], Tag[j], Qj[j], Qk[j], Vj[j], Vk[j],
                     Rd[j], A[j]);
             end
@@ -457,7 +457,7 @@ module RS (
                     `BEQ, `BNE, `BLT, `BGE, `BLTU, `BGEU: begin
                         ROB_Ready <= `True;
                         ROB_Addr <= Tag[Working_RS];
-                        ROB_A <= result;
+                        ROB_A <= {A[Working_RS][31:1],result[0]};
                         ROB_Rd<=Rd[Working_RS];
                     end
                     `JALR: begin

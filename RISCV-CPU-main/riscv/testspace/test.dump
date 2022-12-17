@@ -6,57 +6,52 @@ Disassembly of section .rom:
 
 00000000 <.rom>:
    0:	00020137          	lui	sp,0x20
-   4:	02c010ef          	jal	ra,1030 <main>
+   4:	04c010ef          	jal	ra,1050 <main>
    8:	0ff00513          	li	a0,255
    c:	000306b7          	lui	a3,0x30
   10:	00a68223          	sb	a0,4(a3) # 30004 <__heap_start+0x2e004>
-  14:	ff9ff06f          	j	c <outb-0xff4>
+  14:	ff9ff06f          	j	c <f-0xff4>
 
 Disassembly of section .text:
 
-00001000 <outb>:
-    1000:	fe010113          	addi	sp,sp,-32 # 1ffe0 <__heap_start+0x1dfe0>
-    1004:	00812e23          	sw	s0,28(sp)
-    1008:	02010413          	addi	s0,sp,32
-    100c:	00050793          	mv	a5,a0
-    1010:	fef407a3          	sb	a5,-17(s0)
-    1014:	000307b7          	lui	a5,0x30
-    1018:	fef44703          	lbu	a4,-17(s0)
-    101c:	00e78023          	sb	a4,0(a5) # 30000 <__heap_start+0x2e000>
-    1020:	00000013          	nop
-    1024:	01c12403          	lw	s0,28(sp)
-    1028:	02010113          	addi	sp,sp,32
-    102c:	00008067          	ret
+00001000 <f>:
+    1000:	00100793          	li	a5,1
+    1004:	00a7cc63          	blt	a5,a0,101c <f+0x1c>
+    1008:	00001737          	lui	a4,0x1
+    100c:	07472783          	lw	a5,116(a4) # 1074 <__bss_start>
+    1010:	00178793          	addi	a5,a5,1
+    1014:	06f72a23          	sw	a5,116(a4)
+    1018:	00008067          	ret
+    101c:	ff010113          	addi	sp,sp,-16 # 1fff0 <__heap_start+0x1dff0>
+    1020:	00112623          	sw	ra,12(sp)
+    1024:	000017b7          	lui	a5,0x1
+    1028:	0747a783          	lw	a5,116(a5) # 1074 <__bss_start>
+    102c:	06078793          	addi	a5,a5,96
+    1030:	0ff7f793          	andi	a5,a5,255
+    1034:	00030737          	lui	a4,0x30
+    1038:	00f70023          	sb	a5,0(a4) # 30000 <__heap_start+0x2e000>
+    103c:	fff50513          	addi	a0,a0,-1
+    1040:	fc1ff0ef          	jal	ra,1000 <f>
+    1044:	00c12083          	lw	ra,12(sp)
+    1048:	01010113          	addi	sp,sp,16
+    104c:	00008067          	ret
 
-00001030 <main>:
-    1030:	fe010113          	addi	sp,sp,-32
-    1034:	00112e23          	sw	ra,28(sp)
-    1038:	00812c23          	sw	s0,24(sp)
-    103c:	02010413          	addi	s0,sp,32
-    1040:	00300793          	li	a5,3
-    1044:	fef42623          	sw	a5,-20(s0)
-    1048:	00100793          	li	a5,1
-    104c:	fef42423          	sw	a5,-24(s0)
-    1050:	01c0006f          	j	106c <main+0x3c>
-    1054:	fec42783          	lw	a5,-20(s0)
-    1058:	00179793          	slli	a5,a5,0x1
-    105c:	fef42623          	sw	a5,-20(s0)
-    1060:	fe842783          	lw	a5,-24(s0)
-    1064:	00178793          	addi	a5,a5,1
-    1068:	fef42423          	sw	a5,-24(s0)
-    106c:	fe842703          	lw	a4,-24(s0)
-    1070:	00200793          	li	a5,2
-    1074:	fee7d0e3          	bge	a5,a4,1054 <main+0x24>
-    1078:	fec42783          	lw	a5,-20(s0)
-    107c:	0ff7f793          	andi	a5,a5,255
-    1080:	00078513          	mv	a0,a5
-    1084:	f7dff0ef          	jal	ra,1000 <outb>
-    1088:	00000793          	li	a5,0
-    108c:	00078513          	mv	a0,a5
-    1090:	01c12083          	lw	ra,28(sp)
-    1094:	01812403          	lw	s0,24(sp)
-    1098:	02010113          	addi	sp,sp,32
-    109c:	00008067          	ret
+00001050 <main>:
+    1050:	ff010113          	addi	sp,sp,-16
+    1054:	00112623          	sw	ra,12(sp)
+    1058:	00300513          	li	a0,3
+    105c:	fa5ff0ef          	jal	ra,1000 <f>
+    1060:	000017b7          	lui	a5,0x1
+    1064:	0747a503          	lw	a0,116(a5) # 1074 <__bss_start>
+    1068:	00c12083          	lw	ra,12(sp)
+    106c:	01010113          	addi	sp,sp,16
+    1070:	00008067          	ret
+
+Disassembly of section .sdata:
+
+00001074 <a>:
+    1074:	0001                	nop
+	...
 
 Disassembly of section .riscv.attributes:
 
@@ -65,7 +60,7 @@ Disassembly of section .riscv.attributes:
    2:	0000                	unimp
    4:	7200                	flw	fs0,32(a2)
    6:	7369                	lui	t1,0xffffa
-   8:	01007663          	bgeu	zero,a6,14 <outb-0xfec>
+   8:	01007663          	bgeu	zero,a6,14 <f-0xfec>
    c:	0011                	c.nop	4
    e:	0000                	unimp
   10:	1004                	addi	s1,sp,32
@@ -83,5 +78,5 @@ Disassembly of section .comment:
    6:	29554e47          	fmsub.s	ft8,fa0,fs5,ft5,rmm
    a:	3120                	fld	fs0,96(a0)
    c:	2e30                	fld	fa2,88(a2)
-   e:	2e31                	jal	32a <outb-0xcd6>
+   e:	2e31                	jal	32a <f-0xcd6>
   10:	0030                	addi	a2,sp,8

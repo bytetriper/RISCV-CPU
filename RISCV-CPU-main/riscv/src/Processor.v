@@ -85,35 +85,36 @@ module Processor (
             case (Inst[6:0])
                 `I_LOAD: begin
                     rd = {27'b0, Inst[11:7]};
-                    if (rd != 0) begin
-                        Tags[rd] = {28'b0, ROB_Tail};
-                    end
-                    if (Tags[Inst[19:15]] != `Empty) begin
-                        qj = {Tags[Inst[19:15]]};
-                    end
-                    begin
-                        vj = REGISTER[Inst[19:15]];
-                        qj = `Empty;
-                    end
-                    qk = `Empty;
-                    Imm = {20'b0, Inst[31:20]};
-                    //name = (`I_LOAD << 10) | (Inst[14:12] << 7);
-                    name = {`I_LOAD, Inst[14:12], 7'b0};
-                    ready = `True;
-                end
-                `I_BINARY: begin
-                    rd = {27'b0, Inst[11:7]};
-                    if (rd != 0) begin
-                        Tags[rd] = {28'b0, ROB_Tail};
-                    end
                     if (Tags[Inst[19:15]] != `Empty) begin
                         qj = Tags[Inst[19:15]];
                     end else begin
                         vj = REGISTER[Inst[19:15]];
                         qj = `Empty;
                     end
+                    if (rd != 0) begin
+                        Tags[rd] = {28'b0, ROB_Tail};
+                    end
                     qk = `Empty;
-                    Imm = {20'b0, Inst[31:20]};
+                    Imm = {{20{Inst[31]}}, Inst[31:20]};
+                    //Imm= $signed (Imm) ;
+                    //name = (`I_LOAD << 10) | (Inst[14:12] << 7);
+                    name = {`I_LOAD, Inst[14:12], 7'b0};
+                    ready = `True;
+                end
+                `I_BINARY: begin
+                    rd = {27'b0, Inst[11:7]};
+
+                    if (Tags[Inst[19:15]] != `Empty) begin
+                        qj = Tags[Inst[19:15]];
+                    end else begin
+                        vj = REGISTER[Inst[19:15]];
+                        qj = `Empty;
+                    end
+                    if (rd != 0) begin
+                        Tags[rd] = {28'b0, ROB_Tail};
+                    end
+                    qk = `Empty;
+                    Imm = {{20{Inst[31]}}, Inst[31:20]};
                     name = {`I_BINARY, Inst[14:12], 7'b0};
                     ready = `True;
                 end
@@ -131,7 +132,9 @@ module Processor (
                 end
                 `U_LUI: begin
                     rd = {27'b0, Inst[11:7]};
-                    Tags[rd] = {28'b0, ROB_Tail};
+                    if (rd != 0) begin
+                        Tags[rd] = {28'b0, ROB_Tail};
+                    end
                     Imm = {Inst[31:12], 12'b0};
                     qk = `Empty;
                     qj = `Empty;
@@ -145,7 +148,7 @@ module Processor (
                         vj = REGISTER[Inst[19:15]];
                         qj = `Empty;
                     end
-                    if (Tags[Inst[24:20]] != `NO_RS_AVAILABLE) begin
+                    if (Tags[Inst[24:20]] != `Empty) begin
                         qk = Tags[Inst[24:20]];
                     end else begin
                         vk = REGISTER[Inst[24:20]];
@@ -159,13 +162,8 @@ module Processor (
                     ready = `True;
                 end
                 `R_PRIMARY: begin
-                    rd = {27'b0, Inst[11:7]};
-                    if (rd != 0) begin
-                        Tags[rd] = {28'b0, ROB_Tail};
-                    end
-                    if (rd != 0) begin
-                        Tags[rd] = {28'b0, ROB_Tail};
-                    end
+                    rd  = {27'b0, Inst[11:7]};
+
                     Imm = 0;
                     if (Tags[Inst[19:15]] != `Empty) begin
                         qj = Tags[Inst[19:15]];
@@ -178,6 +176,9 @@ module Processor (
                     end else begin
                         vk = REGISTER[Inst[24:20]];
                         qk = `Empty;
+                    end
+                    if (rd != 0) begin
+                        Tags[rd] = {28'b0, ROB_Tail};
                     end
                     name  = {`R_PRIMARY, Inst[14:12], 7'b0};
                     ready = `True;
@@ -204,36 +205,35 @@ module Processor (
                         vk = REGISTER[Inst[24:20]];
                         qk = `Empty;
                     end
-                    rd = {PC[31:1], Predict_Jump_Bool};
-                    name = {`SB_ALL, Inst[14:12], 7'b0};
+                    rd = {PC[31:1], Predict_Jump_Bool}+4;
+                    if (Predict_Jump_Bool) begin
+                        Imm = PC+Imm;
+                    end
+                    //$display("ASDDD:%x",PC);
+                    name  = {`SB_ALL, Inst[14:12], 7'b0};
                     ready = `True;
                 end
                 `I_JALR: begin
                     rd = {27'b0, Inst[11:7]};
-                    if (rd != 0) begin
-                        Tags[rd] = {28'b0, ROB_Tail};
-                    end
-                    if (rd != 0) begin
-                        Tags[rd] = {28'b0, ROB_Tail};
-                    end
+
                     if (Tags[Inst[19:15]] != `Empty) begin
                         qj = Tags[Inst[19:15]];
                     end else begin
                         vj = REGISTER[Inst[19:15]];
                         qj = `Empty;
                     end
+                    if (rd != 0) begin
+                        Tags[rd] = {28'b0, ROB_Tail};
+                    end
                     vk = PC + 4;
                     qk = `Empty;
                     //Imm[11:0] = Inst[31:20];
-                    Imm = {20'b0, Inst[31:20]};
+                    Imm = {{20{Inst[31]}}, Inst[31:20]};
                     name = `JALR;
                     ready = `True;
                 end
                 `UJ_JAL: begin
                     rd = {27'b0, Inst[11:7]};
-                    if (rd != 0) begin
-                        Tags[rd] = {28'b0, ROB_Tail};
-                    end
                     if (rd != 0) begin
                         Tags[rd] = {28'b0, ROB_Tail};
                     end
@@ -247,7 +247,7 @@ module Processor (
                     Imm[19:12] = Inst[19:12];
                     */
                     Imm = {
-                        11'b0,
+                        {11{Inst[31]}},
                         Inst[31],
                         Inst[19:12],
                         Inst[20],
@@ -271,7 +271,7 @@ module Processor (
         if (rst) begin
 
         end else if (ROB_Ready) begin
-            if (Tags[ROB_Addr][3:0] == ROB_Tag) begin
+            if (Tags[ROB_Addr][3:0] == ROB_Tag&&ROB_Addr!=0) begin
                 Tags[ROB_Addr] = `Empty;
                 REGISTER[ROB_Addr] = ROB_Value;
             end
@@ -280,8 +280,8 @@ module Processor (
 
     //Must put under ROB_Ready Block
     always @(posedge clr) begin
-        for(k=0;k<32;k=k+1)begin
-            Tags[k]=`Empty;
+        for (k = 0; k < 32; k = k + 1) begin
+            Tags[k] = `Empty;
         end
     end
 endmodule

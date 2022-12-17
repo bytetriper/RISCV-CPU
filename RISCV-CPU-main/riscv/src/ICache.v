@@ -14,7 +14,8 @@ module ICache (
     input wire rn,
 
     output reg [31:0] Inst,
-    output reg ready
+    output reg ready,
+    output reg Predict_Ready
 );
 
     reg [31:0] Cache[`Cache_Size][`Cache_Line];
@@ -31,23 +32,27 @@ module ICache (
         IC_rn = `False;
         ready = `True;
     end
+    always @(negedge clk ) begin
+        Predict_Ready=`False;
+    end
     always @(addr) begin
         if (rst) begin
 
         end else if (rn) begin
-            PC = addr;
             if (Tag[addr[8:6]] == addr[31:9]) begin
                 ready = `True;
+                Predict_Ready=`True;
                 Inst  = Cache[addr[8:6]][addr[5:2]];
             end else begin
                 ready = `False;
                 ToRam = `True;
-                Tag[addr[8:6]] = addr[31:9];
-                Ram_Addr = {addr[31:9], 9'b0};
-                Ram_Addr_limit = {addr[31:9], 9'b111100};
                 IC_rn = `True;
-                IC_addr = {addr[31:9], 9'b0};
+                Tag[addr[8:6]] = addr[31:9];
+                Ram_Addr = {addr[31:9], addr[8:6],6'b0};
+                Ram_Addr_limit = {addr[31:9],addr[8:6],6'b111100};
+                IC_addr = Ram_Addr;
             end
+            PC = addr;
         end
     end
     always @(posedge IC_ready) begin
@@ -55,8 +60,7 @@ module ICache (
 
         end else if (Ram_Addr != Ram_Addr_limit) begin
             IC_rn = `True;
-            $display("PC:%x IC:%x", IC_addr, IC_value);
-            
+            //$display("PC:%x IC:%x", IC_addr, IC_value);
             Cache[PC[8:6]][Ram_Addr[5:2]] = IC_value;
             Ram_Addr = Ram_Addr + 4;
             IC_addr = Ram_Addr;
@@ -64,7 +68,9 @@ module ICache (
             ToRam = `False;
             IC_rn = `False;
             ready = `True;
+            Cache[PC[8:6]][Ram_Addr[5:2]] = IC_value;
             Inst  = Cache[PC[8:6]][PC[5:2]];
+            Predict_Ready=`True;
         end
     end
 endmodule

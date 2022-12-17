@@ -99,7 +99,7 @@ module mem_ctrl (
             IC_ready = `False;
         end
     end
-    always @(LSB_addr) begin
+    always @(LSB_addr,LSB_wn,LSB_rn) begin
         if (LSB_rn) begin
             LSB_ready = `False;
         end
@@ -223,6 +223,8 @@ module mem_ctrl (
                         Reading <= Reading + 1;
                     end else begin
                         Reading <= 0;
+                        mem_wr<=`LOW;
+                        mem_a<=0;
                     end
                 end
                 2: begin
@@ -233,6 +235,8 @@ module mem_ctrl (
                     Reading <= Reading + 1;
                     end else begin
                         Reading<=0;
+                        mem_wr<=`LOW;
+                        mem_a<=0;
                     end
                 end
                 3: begin
