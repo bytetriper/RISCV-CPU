@@ -8,7 +8,6 @@ module Fetcher (
 
     //From Flow Controler
     input wire clr,
-    input wire [`Data_Bus] Target_PC,
 
     //To ICache
     output reg [`Data_Bus] addr,  //only 17:0 is used
@@ -28,39 +27,41 @@ module Fetcher (
     //Exposed
     output reg [`Data_Bus] Out_PC
 );
-    reg [`Data_Bus] PC ;
+    reg [`Data_Bus] PC;
     reg [`Data_Bus] Inst_Buffer;
+    reg Fixed;
     initial begin
         ready = `False;
         rn = `False;
-        PC=32'b0;
-        Inst_Buffer=32'b0;
+        PC = 32'b0;
+        Inst_Buffer = 32'b0;
+        Fixed = `False;
     end
     always @(negedge clk) begin
-        ready<=`False;
+        ready <= `False;
     end
     always @(posedge clk) begin
         if (rst) begin
 
         end else if (clr) begin
-            PC<=Target_PC;
-            rn<=`True;
-            addr<=Target_PC;
-            Out_PC<=Target_PC;
-            ready<=`False;
+            Fixed <= `True;
         end else if (Read_ready) begin
             if (success) begin
-                rn <= `True;
+                rn   <= `True;
                 addr <= Predict_Jump;
-                ready <= `True;
-                CurrentInst <= Inst;
+                if (Fixed) begin
+                    Fixed <= `False;
+                end else begin
+                    ready <= `True;
+                    CurrentInst <= Inst;
+                end
                 PC <= Predict_Jump;
-                Out_PC<= PC;
+                Out_PC <= PC;
             end else begin
                 rn <= `False;
             end
         end else begin
-            
+
         end
     end
 endmodule

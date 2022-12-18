@@ -46,7 +46,7 @@ module cpu (
     wire                                   Read_ready;
     wire                                   CurrentAddr;
 
-    wire Predict_Ready;
+    wire                                   Predict_Ready;
     wire                                   Predict_Jump_Bool;
     wire                [      `Data_Bus]  Predict_Jump;
     wire                [      `Data_Bus]  Target_PC;
@@ -111,20 +111,20 @@ module cpu (
         .LSB_addr  (LSB_addr),
         .LSB_ready (LSB_ready),
         .LSB_value (LSB_value),
-        .Inst_Name(Inst_Name)
+        .Inst_Name (Inst_Name)
     );
     ICache u_ICache (
-        .clk     (clk_in & rdy_in),
-        .rst     (rst_in),
-        .rdy     (True_Wire),
-        .IC_rn   (IC_rn),
-        .IC_addr (IC_addr),
-        .IC_ready(IC_ready),
-        .IC_value(IC_value),
-        .addr    (addr),
-        .rn      (rn),
-        .Inst    (Inst),
-        .ready   (Read_ready),
+        .clk          (clk_in & rdy_in),
+        .rst          (rst_in),
+        .rdy          (True_Wire),
+        .IC_rn        (IC_rn),
+        .IC_addr      (IC_addr),
+        .IC_ready     (IC_ready),
+        .IC_value     (IC_value),
+        .addr         (addr),
+        .rn           (rn),
+        .Inst         (Inst),
+        .ready        (Read_ready),
         .Predict_Ready(Predict_Ready)
     );
     Fetcher u_Fetcher (
@@ -133,7 +133,6 @@ module cpu (
         .rdy         (True_Wire),
         .Predict_Jump(Predict_Jump),
         .clr         (clear),
-        .Target_PC   (Clr_PC),
         .addr        (addr),
         .rn          (rn),
         .Inst        (Inst),
@@ -148,8 +147,10 @@ module cpu (
         .rst              (rst_in),
         .rdy              (True_Wire),
         .PC               (addr),              //GAN
+        .clr              (clear),
+        .Target_PC        (Clr_PC),
         .Inst             (Inst),
-        .Ready(Predict_Ready),
+        .Ready            (Predict_Ready),
         .Predict_Jump     (Predict_Jump),
         .Train_Ready      (Train_Ready),
         .Train_Result     (Train_Result),
@@ -229,7 +230,7 @@ module cpu (
         .clr            (clear),
         .Clr_PC         (Clr_PC),
         .ready          (Processor_ready),
-        .Inst_Name(Inst_Name),
+        .Inst_Name      (Inst_Name),
         .rd             (rd),
         .name           (name),
         .Imm            (Imm),

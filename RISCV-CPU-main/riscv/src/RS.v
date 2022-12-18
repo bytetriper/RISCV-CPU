@@ -23,7 +23,7 @@ module RS (
     output reg ROB_Ready,  //log(RS_Size)=log(16)=4
     output reg [`ROB_Width] ROB_Addr,
     output reg [`Data_Bus] ROB_A,
-    output reg [`Data_Bus] ROB_Rd,//SP:For Load And Store
+    output reg [`Data_Bus] ROB_Rd,  //SP:For Load And Store
     //From ROB
     input wire [`ROB_Size] ROB_Valid,
     input wire [511:0] ROB_Value,  //32*ROB_Size-1:0
@@ -80,7 +80,7 @@ module RS (
     reg [`RS_Width] Working_RS;
     wire HasFree;
     wire HasValid;
-    wire [16:0] Name_RS_TEST=Name[Working_RS];
+    wire [16:0] Name_RS_TEST = Name[Working_RS];
     wire [`RS_Width] valid_tag, free_tag;
     assign free_tag =  ~Busy[0]?0:
                             ~Busy[1]?1:
@@ -249,20 +249,20 @@ module RS (
                     Op <= `Add;
                     //A[IsValid]<=A[IsValid]+Vj[IsValid];
                 end
-                `LUI:begin
-                    LV<=0;
-                    RV<=A[valid_tag];
-                    Op<=`Add;
+                `LUI: begin                    
+                    LV <= 0;
+                    RV <= A[valid_tag];
+                    Op <= `Add;
                 end
-                `ADD:begin
-                    LV<=Vj[valid_tag];
-                    RV<=Vk[valid_tag];
-                    Op<= `Add;
+                `ADD: begin
+                    LV <= Vj[valid_tag];
+                    RV <= Vk[valid_tag];
+                    Op <= `Add;
                 end
-                `ADDI:begin
-                    LV<=Vj[valid_tag];
-                    RV<=A[valid_tag];
-                    Op<=`Add;
+                `ADDI: begin
+                    LV <= Vj[valid_tag];
+                    RV <= A[valid_tag];
+                    Op <= `Add;
                 end
                 `AND: begin
                     LV <= Vj[valid_tag];
@@ -289,9 +289,9 @@ module RS (
                     //A[IsValid]<=Rd[IsValid]+{A[IsValid][31:1], 1'b0};
                 end
                 `BGE: begin
-                    LV <= $signed(Vj[valid_tag]);
-                    RV <= $signed(Vk[valid_tag]);
-                    Op <= `GEQ;
+                    LV <= Vj[valid_tag];
+                    RV <= Vk[valid_tag];
+                    Op <= `GEQ_S;
                     //A[IsValid]<=Rd[IsValid]+{A[IsValid][31:1], 1'b0};
                 end
                 `BGEU: begin
@@ -331,7 +331,7 @@ module RS (
                     //A[IsValid]<=Rd[IsValid]+A[IsValid];
                 end
                 `OR: begin
-                    ALU_ready <= `True;
+                    LV <=Vj[valid_tag];
                     RV <= Vk[valid_tag];
                     Op <= `Or;
                     //A[IsValid]<=Vj[IsValid]|Vk[IsValid];
@@ -355,14 +355,14 @@ module RS (
                     //A[IsValid]<=Vj[IsValid]<<A[IsValid];
                 end
                 `SLT: begin
-                    LV <= $signed(Vj[valid_tag]);
-                    RV <= $signed(Vk[valid_tag]);
-                    Op <= `Less;
+                    LV <= Vj[valid_tag];
+                    RV <= Vk[valid_tag];
+                    Op <= `Less_S;
                 end
                 `SLTI: begin
-                    LV <= $signed(Vj[valid_tag]);
-                    RV <= $signed(A[valid_tag]);
-                    Op <= `Less;
+                    LV <= Vj[valid_tag];
+                    RV <= A[valid_tag];
+                    Op <= `Less_S;
                 end
                 `SLTIU: begin
                     LV <= Vj[valid_tag];
@@ -409,6 +409,9 @@ module RS (
                     RV <= A[valid_tag];
                     Op <= `Xor;
                 end
+                default:begin
+                    $display("[ALU FATAL]:%d",clkcycle);
+                end
             endcase
         end else begin
             ALU_ready <= `False;
@@ -422,7 +425,7 @@ module RS (
 
         end else if (ALU_success) begin  //COMMIT
             if (Busy[Working_RS]) begin
-                Busy[Working_RS] <= `False;
+                Busy[Working_RS]  <= `False;
                 Valid[Working_RS] <= `False;
                 //Train Predictor
                 case (Name[Working_RS])
@@ -440,43 +443,43 @@ module RS (
                         ROB_Ready <= `True;
                         ROB_Addr <= Tag[Working_RS];
                         ROB_A <= result;
-                        ROB_Rd<=Rd[Working_RS];
+                        ROB_Rd <= Rd[Working_RS];
                     end
-                    `LUI:begin
+                    `LUI: begin
                         ROB_Ready <= `True;
                         ROB_Addr <= Tag[Working_RS];
                         ROB_A <= result;
-                        ROB_Rd<=Rd[Working_RS];
+                        ROB_Rd <= Rd[Working_RS];
                     end
                     `SB, `SH, `SW: begin
                         ROB_Ready <= `True;
                         ROB_Addr <= Tag[Working_RS];
                         ROB_A <= Vk[Working_RS];
-                        ROB_Rd<= result;
+                        ROB_Rd <= result;
                     end
                     `BEQ, `BNE, `BLT, `BGE, `BLTU, `BGEU: begin
                         ROB_Ready <= `True;
                         ROB_Addr <= Tag[Working_RS];
-                        ROB_A <= {A[Working_RS][31:1],result[0]};
-                        ROB_Rd<=Rd[Working_RS];
+                        ROB_A <= {A[Working_RS][31:1], result[0]};
+                        ROB_Rd <= Rd[Working_RS];
                     end
                     `JALR: begin
                         ROB_A <= result;  //SP
                         ROB_Ready <= `True;
                         ROB_Addr <= Tag[Working_RS];
-                        ROB_Rd<=Rd[Working_RS];
+                        ROB_Rd <= Rd[Working_RS];
                     end
                     `JAL: begin
-                        ROB_A <= result;  //SP
+                        ROB_A <= Vk[Working_RS];  //SP
                         ROB_Ready <= `True;
                         ROB_Addr <= Tag[Working_RS];
-                        ROB_Rd<=Rd[Working_RS];
+                        ROB_Rd <= Rd[Working_RS];
                     end
                     default: begin
                         ROB_Ready <= `True;
                         ROB_Addr <= Tag[Working_RS];
                         ROB_A <= result;
-                        ROB_Rd<=Rd[Working_RS];
+                        ROB_Rd <= Rd[Working_RS];
                     end
                 endcase
                 //Broadcast
@@ -488,7 +491,7 @@ module RS (
         end
     end
     always @(posedge ready) begin  //Introduce new inst into RS
-        if (!HasFree||clr) begin
+        if (!HasFree || clr) begin
         end else begin
             Vj[free_tag] = vj;
             Qj[free_tag] = qj;
@@ -498,7 +501,9 @@ module RS (
             Rd[free_tag] = rd;
             Tag[free_tag] = tag;
             Name[free_tag] = name;
-            
+            $fdisplay(Log_File, "[Pushing Inst]cycle:%d", clkcycle);
+            $fdisplay(Log_File, "Name:%x Vj:%x Qj:%d Vk:%x Qk:%d Imm:%x", name,
+                      vj, qj, vk, qk, Imm);
             if (qj != `Empty) begin
                 if (ROB_Valid[qj]) begin
                     Vj[free_tag] = Tmp_Value[qj];
@@ -512,7 +517,7 @@ module RS (
                 end
             end
             Valid[free_tag] = `False;
-            Busy[free_tag] = `True;  //LAST indeed
+            Busy[free_tag]  = `True;  //LAST indeed
         end
     end
 
@@ -520,21 +525,20 @@ module RS (
         if (clr) begin
 
         end else begin
-
-
             for (j = 0; j < 32; j++) begin
                 case (Name[j])
                     default: begin
                         if (Qj[j] != `Empty) begin
                             if (ROB_Valid[Qj[j]]) begin
-                                Qj[j] <= `Empty;
-                                Vj[j] <= Tmp_Value[Qj[j]];
+                                Vj[j] = Tmp_Value[Qj[j]];
+                                Qj[j] = `Empty;
                             end
                         end
                         if (Qk[j] != `Empty) begin
                             if (ROB_Valid[Qk[j]]) begin
-                                Qk[j] <= `Empty;
-                                Vk[j] <= Tmp_Value[Qk[j]];
+                                Vk[j] = Tmp_Value[Qk[j]];
+                                Qk[j] = `Empty;
+
                             end
                         end
                     end

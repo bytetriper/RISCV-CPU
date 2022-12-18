@@ -1,8 +1,9 @@
 #include"io.h"
-int a=1;
+int a=100;
 void f(int c){
     if(c>1)
     {    
+        a/=10;
         outb(a+96);
         f(c-1);
     }
@@ -12,6 +13,7 @@ void f(int c){
     }
 }
 int main(){
-    f(3);
+    //outl(1357);
+    outl(1357);
     return a;
 }

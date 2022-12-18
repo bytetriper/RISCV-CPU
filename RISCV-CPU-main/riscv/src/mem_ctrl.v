@@ -178,6 +178,7 @@ module mem_ctrl (
                         Reading <= Reading + 1;
                     end else begin
                         Reading <= 0;
+                        LSB_value<={24'b0,mem_dout};
                     end
 
                 end
@@ -189,6 +190,7 @@ module mem_ctrl (
                         Reading <= Reading + 1;
                     end else begin
                         Reading <= 0;
+                        LSB_value<={16'b0,mem_dout,data[7:0]};
                     end
 
                 end
@@ -201,7 +203,6 @@ module mem_ctrl (
                     data[31:24] <= mem_dout;
                     LSB_value <= {mem_dout, data[23:0]};
                     Reading <= 0;
-
                 end
 
             endcase

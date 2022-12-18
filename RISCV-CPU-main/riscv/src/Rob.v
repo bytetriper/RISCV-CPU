@@ -105,6 +105,7 @@ module Rob (
             Valid[k] = `False;
             Read_Able[k] = `False;
             Readed[k] = `True;
+            A[k]=0;
         end
         RN = `False;
         WN = `False;
@@ -126,8 +127,8 @@ module Rob (
 
     always @(posedge clk) begin
         cycle = cycle + 1;
-        $fdisplay(Log_File, "Cycle:%d Head:%d Tail:%d Full:%d", cycle, Head,
-                  Tail, success ? 0 : 1);
+        $fdisplay(Log_File, "Cycle:%d Head:%d Tail:%d Full:%d HasRead:%d Read_Tag:%d", cycle, Head,
+                  Tail, success ? 0 : 1,HasRead,Read_Tag);
         for (w = Head; w != Tail; w = w + 1) begin
             $fdisplay(
                 Log_File,
@@ -151,6 +152,7 @@ module Rob (
                 Name[Tail] = name;
                 ROB_PC[Tail] = PC;
                 Valid[Tail] = `False;
+                Read_Able[Tail]=`False;
                 case (name)
                     `LB, `LH, `LW, `LBU, `LHU, `LWU, `SB, `SH, `SW: begin
                         Readed[Tail] = `False;
@@ -260,9 +262,12 @@ module Rob (
         if (Working_ROB != 16) begin
             Readed[Working_ROB[3:0]] = `True;
             case (Name[Working_ROB[3:0]])
-                `LB, `LH, `LW, `LBU, `LHU, `LWU: begin
-                    A[Working_ROB[3:0]] = Read_Value;
+                `LB, `LH,`LW : begin
+                    A[Working_ROB[3:0]] = $signed(Read_Value);
                 end
+                 `LBU, `LHU, `LWU:begin
+                    A[Working_ROB[3:0]] =Read_Value;
+                 end
             endcase
         end
     end

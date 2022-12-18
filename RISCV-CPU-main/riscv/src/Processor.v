@@ -157,13 +157,12 @@ module Processor (
                     /*
                     Imm[11:5] = Inst[31:25];
                     Imm[4:0] = Inst[11:7];*/
-                    Imm   = {20'b0, Inst[31:25], Inst[11:7]};
+                    Imm   = {{20{Inst[31]}}, Inst[31:25], Inst[11:7]};
                     name  = {`S_SAVE, Inst[14:12], 7'b0};
                     ready = `True;
                 end
                 `R_PRIMARY: begin
                     rd  = {27'b0, Inst[11:7]};
-
                     Imm = 0;
                     if (Tags[Inst[19:15]] != `Empty) begin
                         qj = Tags[Inst[19:15]];
@@ -180,7 +179,7 @@ module Processor (
                     if (rd != 0) begin
                         Tags[rd] = {28'b0, ROB_Tail};
                     end
-                    name  = {`R_PRIMARY, Inst[14:12], 7'b0};
+                    name  = {`R_PRIMARY, Inst[14:12], Inst[31:25]};
                     ready = `True;
                 end
                 `SB_ALL: begin
@@ -191,7 +190,7 @@ module Processor (
                     Imm[10:5] = Inst[30:25];
                     */
                     Imm = {
-                        19'b0, Inst[31], Inst[7], Inst[30:25], Inst[11:8], 1'b0
+                        {19{Inst[31]}}, Inst[31], Inst[7], Inst[30:25], Inst[11:8], 1'b0
                     };
                     if (Tags[Inst[19:15]] != `Empty) begin
                         qj = Tags[Inst[19:15]];
@@ -228,7 +227,7 @@ module Processor (
                     vk = PC + 4;
                     qk = `Empty;
                     //Imm[11:0] = Inst[31:20];
-                    Imm = {{20{Inst[31]}}, Inst[31:20]};
+                    Imm = {{20{Inst[31]}}, Inst[31:22],2'b0};
                     name = `JALR;
                     ready = `True;
                 end
@@ -251,8 +250,8 @@ module Processor (
                         Inst[31],
                         Inst[19:12],
                         Inst[20],
-                        Inst[30:21],
-                        1'b0
+                        Inst[30:22],
+                        2'b0
                     };
                     name = `JAL;
                     ready = `True;
@@ -271,8 +270,10 @@ module Processor (
         if (rst) begin
 
         end else if (ROB_Ready) begin
-            if (Tags[ROB_Addr][3:0] == ROB_Tag&&ROB_Addr!=0) begin
+            if (Tags[ROB_Addr][3:0] == ROB_Tag) begin
                 Tags[ROB_Addr] = `Empty;
+            end
+            if(ROB_Addr!=0)begin
                 REGISTER[ROB_Addr] = ROB_Value;
             end
         end
