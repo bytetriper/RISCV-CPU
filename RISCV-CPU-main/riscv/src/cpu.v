@@ -88,7 +88,7 @@ module cpu (
 
     wire                                   Train_Ready;
     wire                                   Train_Result;
-
+    wire                [      `Data_Bus]  Train_PC;
 
     wire                [      `Data_Bus]  Clr_PC;
     wire                [     `ROB_Width]  Tag;
@@ -133,6 +133,7 @@ module cpu (
         .rdy         (True_Wire),
         .Predict_Jump(Predict_Jump),
         .clr         (clear),
+        .Clr_PC      (Clr_PC),
         .addr        (addr),
         .rn          (rn),
         .Inst        (Inst),
@@ -154,6 +155,7 @@ module cpu (
         .Predict_Jump     (Predict_Jump),
         .Train_Ready      (Train_Ready),
         .Train_Result     (Train_Result),
+        .Train_PC         (Train_PC),
         .Predict_Jump_Bool(Predict_Jump_Bool)
     );
     Processor u_Processor (
@@ -208,7 +210,8 @@ module cpu (
         .Op          (Op),
         .result      (result),
         .Train_Ready (Train_Ready),
-        .Train_Result(Train_Result)
+        .Train_Result(Train_Result),
+        .Train_PC    (Train_PC)
     );
 
     Alu u_Alu (

@@ -24,6 +24,7 @@ int main() {
 	int phi[15];
 	int P[15];
 	phi[1] = 1;
+	outb(0);
 	for (i = 2; ; ++i ) {
 		if ( i > N ) break;
 		if ( check[i] ) {
@@ -45,6 +46,7 @@ int main() {
 			}
 		}
 		outlln(phi[k]);
+		
 	}
     return 0;
 }

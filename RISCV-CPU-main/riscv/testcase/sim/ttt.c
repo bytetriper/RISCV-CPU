@@ -1,5 +1,5 @@
 #include"io.h"
-int a=100;
+int a=200;
 void f(int c){
     if(c>1)
     {    
@@ -12,8 +12,13 @@ void f(int c){
         a=a+1;
     }
 }
+int rm(int c){
+    if(c<0)return 1;
+    return 0;
+}
 int main(){
-    //outl(1357);
-    outl(1357);
+    f(300);
+    outlln(172);
+    outlln(342);
     return a;
 }

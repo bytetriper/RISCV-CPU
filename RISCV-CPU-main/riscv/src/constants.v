@@ -6,8 +6,11 @@
 `define Mem_Bus 7:0
 `define HIGH 1'b1
 `define LOW 1'b0
+//For ICache
 `define Cache_Line 15:0
 `define Cache_Size 7:0
+
+//For Reg
 `define Register_size 4:0
 `define Reg_Size 31:0
 
@@ -66,6 +69,8 @@
 `define JALR 17'b11001110000000000
 `define JAL 17'b11011110000000000
 
+//For Predictor
+`define BTB_Width 511:0
 //For Register
 `define Register_Width 4:0
 

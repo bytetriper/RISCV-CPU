@@ -37,7 +37,8 @@ module RS (
 
     //TO Predictor
     output reg Train_Ready,
-    output reg Train_Result
+    output reg Train_Result,
+    output reg [31:0] Train_PC
 
 );
     reg [`Data_Bus] Vj[`RS_Size];
@@ -225,7 +226,16 @@ module RS (
     end
     always @(posedge clk) begin
         if (rst) begin
-
+            for (j = 0; j < 32; j = j + 1) begin
+                Busy[j]  <= `False;
+                Valid[j] <= `False;
+            end
+            Train_Ready <= `False;
+            ALU_ready <= `False;
+            ROB_Ready <= `False;
+            LV <= 0;
+            RV <= 0;
+            Op <= `Add;
         end
         if (clr) begin
             for (j = 0; j < 32; j = j + 1) begin
@@ -303,7 +313,7 @@ module RS (
                 `BLT: begin
                     LV <= $signed(Vj[valid_tag]);
                     RV <= $signed(Vk[valid_tag]);
-                    Op <= `Less;
+                    Op <= `Less_S;
                     //A[IsValid]<=Rd[IsValid]+{A[IsValid][31:1], 1'b0};
                 end
                 `BLTU: begin
@@ -431,7 +441,8 @@ module RS (
                 case (Name[Working_RS])
                     `BEQ, `BNE, `BLT, `BGE, `BLTU, `BGEU: begin
                         Train_Ready  <= `True;
-                        Train_Result <= (A[Working_RS][0] & 1) ^ result[0];
+                        Train_Result <= result[0];
+                        Train_PC<= Rd[Working_RS]-4;
                     end
                     default: begin
                         Train_Ready <= `False;
@@ -461,6 +472,7 @@ module RS (
                         ROB_Ready <= `True;
                         ROB_Addr <= Tag[Working_RS];
                         ROB_A <= {A[Working_RS][31:1], result[0]};
+                        //$display("[BBB]:%d %x",clkcycle,Rd[Working_RS]);
                         ROB_Rd <= Rd[Working_RS];
                     end
                     `JALR: begin

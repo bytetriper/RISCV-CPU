@@ -24,6 +24,7 @@ module ICache (
     reg ToRam = `False;
     reg [31:0] Ram_Addr;
     reg [31:0] Ram_Addr_limit;
+    //reg [31:0] Cache[];
     integer i, j;
     initial begin
         for (i = 0; i < 8; i = i + 1) begin

@@ -143,7 +143,12 @@ module Rob (
     end
     always @(posedge ready) begin
         if (rst) begin
-
+            for (k = 0; k < 16; k = k + 1) begin
+                Valid[k] = `False;
+                Read_Able[k] = `False;
+                Readed[k] = `True;
+            end
+            Tail = Head;  //Clear
         end else if (ready) begin
             if (Head == Tail + 1) begin
                 ROB_TO_RS_ready = `False;
@@ -203,14 +208,14 @@ module Rob (
                     end
                 end
                 `BEQ, `BNE, `BLT, `BGE, `BLTU, `BGEU: begin
+                    //$display("[Comm]:%d",cycle);
                     if (A[Head][0] ^ Rd[Head][0]) begin
                         clr <= `True;
-                        if (!A[Head][0]) begin
-                            Clr_PC <= {15'b0, Rd[Head][16:1], 1'b0};
+                        if (A[Head][0]) begin
+                            Clr_PC <= {15'b0, A[Head][16:2], 2'b0};
                         end else begin
-                            Clr_PC <= {15'b0, A[Head][16:1], 1'b0};
+                            Clr_PC <= {15'b0, Rd[Head][16:2], 2'b0};
                         end
-
                     end else begin
                         ROB_Ready <= `False;
                         ROB_Addr <= `Empty;
@@ -221,7 +226,7 @@ module Rob (
                 end
                 `JALR: begin
                     clr <= `True;
-                    Clr_PC <= {15'b0, A[Head][16:1], 1'b0};
+                    Clr_PC <= {15'b0, A[Head][16:2], 2'b0};
                     ROB_Ready <= `True;
                     ROB_Addr <= Rd[Head][4:0];
                     ROB_Tag <= Head;
@@ -307,6 +312,8 @@ module Rob (
             A[RS_Tag] <= RS_A;
             Valid[RS_Tag] <= `True;
             Rd[RS_Tag] <= RS_Rd;
+            //$display("[CCC]:%d %d  %x",cycle,RS_Tag,RS_Rd);
+
         end
     end
     always @(negedge clk) begin  //Overclock

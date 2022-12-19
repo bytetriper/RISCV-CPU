@@ -190,7 +190,7 @@ module Processor (
                     Imm[10:5] = Inst[30:25];
                     */
                     Imm = {
-                        {19{Inst[31]}}, Inst[31], Inst[7], Inst[30:25], Inst[11:8], 1'b0
+                        {19{Inst[31]}}, Inst[31], Inst[7], Inst[30:25], Inst[11:9], 2'b0
                     };
                     if (Tags[Inst[19:15]] != `Empty) begin
                         qj = Tags[Inst[19:15]];
@@ -205,9 +205,7 @@ module Processor (
                         qk = `Empty;
                     end
                     rd = {PC[31:1], Predict_Jump_Bool}+4;
-                    if (Predict_Jump_Bool) begin
-                        Imm = PC+Imm;
-                    end
+                    Imm = PC+Imm;
                     //$display("ASDDD:%x",PC);
                     name  = {`SB_ALL, Inst[14:12], 7'b0};
                     ready = `True;

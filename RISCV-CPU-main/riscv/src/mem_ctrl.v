@@ -77,7 +77,6 @@ module mem_ctrl (
                     LSB_ready = `True;
                 end
             endcase
-
             boss = OffWork;
         end
 
@@ -105,6 +104,9 @@ module mem_ctrl (
         end
         if (LSB_wn) begin
             LSB_ready = `False;
+            if(LSB_addr==32'h30004)begin//End
+                $display("End:%d",cycle);
+            end
         end
     end
     always @(posedge clk) begin

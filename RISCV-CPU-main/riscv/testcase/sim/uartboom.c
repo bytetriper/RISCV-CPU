@@ -19,6 +19,7 @@ int main(){
 		outb('n');
 		outb('o');
 		outb('p');
+		outlln(i);
 	}
 	return 0;
 }
