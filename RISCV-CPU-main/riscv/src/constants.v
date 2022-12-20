@@ -7,9 +7,10 @@
 `define HIGH 1'b1
 `define LOW 1'b0
 //For ICache
-`define Cache_Line 15:0
-`define Cache_Size 7:0
-
+//`define Cache_Line 15:0
+//`define Cache_Size 7:0
+`define Cache_Line 3:0
+`define Cache_Size 31:0
 //For Reg
 `define Register_size 4:0
 `define Reg_Size 31:0

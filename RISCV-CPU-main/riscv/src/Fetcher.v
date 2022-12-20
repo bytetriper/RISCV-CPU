@@ -30,6 +30,7 @@ module Fetcher (
     reg [`Data_Bus] PC,Previous_Clr_PC;
     reg [`Data_Bus] Inst_Buffer;
     reg Fixed;
+    integer Stuck,Stuck_Log;
     initial begin
         ready = `False;
         rn = `False;
@@ -37,6 +38,8 @@ module Fetcher (
         Previous_Clr_PC={1'b1,31'b0};//To Avoid Collision
         Inst_Buffer = 32'b0;
         Fixed = `False;
+        Stuck=0;
+        Stuck_Log=$fopen("Stuck.txt","w");
     end
     always @(negedge clk) begin
         ready <= `False;
@@ -79,6 +82,8 @@ module Fetcher (
                 Out_PC <= PC;
             end else begin
                 rn <= `False;
+                Stuck<=Stuck+1;
+                $fwrite(Stuck_Log,"%d ",Stuck);
             end
         end else begin
 

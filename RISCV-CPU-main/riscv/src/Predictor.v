@@ -31,7 +31,7 @@ module Predictor (
         Predict_Jump_Bool = `False;
         Fixed = `False;
         for (k = 0; k < 512; k = k + 1) begin
-            BTB[k] = 2'b00;
+            BTB[k] = 2'b01;
         end
     end
     always @(posedge rst) begin
@@ -39,7 +39,7 @@ module Predictor (
         Predict_Jump_Bool = `False;
         Fixed = `False;
         for (k = 0; k < 512; k = k + 1) begin
-            BTB[k] = 2'b00;
+            BTB[k] = 2'b01;
         end
     end
     always @(posedge clr) begin

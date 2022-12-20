@@ -35,6 +35,7 @@ module mem_ctrl (
     reg [`Data_Bus] data;
     reg [`Data_Bus] TmpAddr;
     integer Log_File, cycle;
+    integer ICRead, LSBWrite, LSBRead, Spare;
     initial begin
         data = 0;
         TmpAddr = 0;
@@ -48,6 +49,10 @@ module mem_ctrl (
         Log_File = $fopen("Mem_Ctrl_Log", "w");
         cycle = 0;
         PreviousBoss = 0;
+        ICRead = 0;
+        LSBWrite = 0;
+        LSBRead = 0;
+        Spare = 0;
     end
     always @(posedge clk) begin
         cycle <= cycle + 1;
@@ -81,6 +86,21 @@ module mem_ctrl (
         end
 
     end
+    always @(posedge clk) begin
+        if (boss == OffWork) begin
+            Spare = Spare + 1;
+        end
+        if(boss ==IC)begin
+            ICRead=ICRead+1;
+
+        end
+        if(boss==LSB_w)begin
+            LSBWrite=LSBWrite+1;
+        end
+        if(boss==LSB_r)begin
+            LSBRead=LSBRead+1;
+        end
+    end
     always @(negedge clk) begin
         if (boss == OffWork) begin
             if (LSB_wn&&(PreviousBoss!=LSB_w)) begin//Make Sure ROB has enough time to react
@@ -98,14 +118,16 @@ module mem_ctrl (
             IC_ready = `False;
         end
     end
-    always @(LSB_addr,LSB_wn,LSB_rn) begin
+    always @(LSB_addr, LSB_wn, LSB_rn) begin
         if (LSB_rn) begin
             LSB_ready = `False;
         end
         if (LSB_wn) begin
             LSB_ready = `False;
-            if(LSB_addr==32'h30004)begin//End
-                $display("End:%d",cycle);
+            if (LSB_addr == 32'h30004) begin  //End
+                $display("");
+                $display("End:%d", cycle);
+                $display("ICRead Time:%d LSBRead Time:%d LSBWrite Time:%d Spare Time:%d",ICRead,LSBRead,LSBWrite,Spare);
             end
         end
     end
@@ -179,8 +201,8 @@ module mem_ctrl (
                         TmpAddr <= TmpAddr + 1;
                         Reading <= Reading + 1;
                     end else begin
-                        Reading <= 0;
-                        LSB_value<={24'b0,mem_dout};
+                        Reading   <= 0;
+                        LSB_value <= {24'b0, mem_dout};
                     end
 
                 end
@@ -191,8 +213,8 @@ module mem_ctrl (
                         TmpAddr <= TmpAddr + 1;
                         Reading <= Reading + 1;
                     end else begin
-                        Reading <= 0;
-                        LSB_value<={16'b0,mem_dout,data[7:0]};
+                        Reading   <= 0;
+                        LSB_value <= {16'b0, mem_dout, data[7:0]};
                     end
 
                 end
@@ -226,20 +248,20 @@ module mem_ctrl (
                         Reading <= Reading + 1;
                     end else begin
                         Reading <= 0;
-                        mem_wr<=`LOW;
-                        mem_a<=0;
+                        mem_wr  <= `LOW;
+                        mem_a   <= 0;
                     end
                 end
                 2: begin
                     if (Inst_Name != `SH) begin
-                    mem_din <= LSB_Wvalue[23:16];
-                    mem_a   <= TmpAddr;
-                    TmpAddr <= TmpAddr + 1;
-                    Reading <= Reading + 1;
+                        mem_din <= LSB_Wvalue[23:16];
+                        mem_a   <= TmpAddr;
+                        TmpAddr <= TmpAddr + 1;
+                        Reading <= Reading + 1;
                     end else begin
-                        Reading<=0;
-                        mem_wr<=`LOW;
-                        mem_a<=0;
+                        Reading <= 0;
+                        mem_wr  <= `LOW;
+                        mem_a   <= 0;
                     end
                 end
                 3: begin
