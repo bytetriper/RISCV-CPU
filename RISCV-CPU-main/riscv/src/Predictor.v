@@ -12,6 +12,7 @@ module Predictor (
     input wire [`Data_Bus] PC,
     input wire [`Data_Bus] Inst,
     input wire Ready,
+
     //To Fetcher
     output reg [`Data_Bus] Predict_Jump,
     //To RS
@@ -21,33 +22,35 @@ module Predictor (
     input wire Train_Result,
     input wire [`Data_Bus] Train_PC
 );
-    integer Imm,k;
+    integer Imm, k;
     reg Fixed;
-    reg [1:0] BTB[`BTB_Width];//00:NN 01:N 10:Y 11:YY 
+    reg [1:0] BTB[`BTB_Width];  //00:NN 01:N 10:Y 11:YY 
 
     initial begin
         Predict_Jump = 0;
         Predict_Jump_Bool = `False;
         Fixed = `False;
-        for(k=0;k<512;k=k+1)begin
-            BTB[k]=2'b01;
+        for (k = 0; k < 512; k = k + 1) begin
+            BTB[k] = 2'b00;
         end
     end
     always @(posedge rst) begin
         Predict_Jump = 0;
         Predict_Jump_Bool = `False;
         Fixed = `False;
-        for(k=0;k<512;k=k+1)begin
-            BTB[k]=2'b01;
+        for (k = 0; k < 512; k = k + 1) begin
+            BTB[k] = 2'b00;
         end
     end
     always @(posedge clr) begin
-        Fixed = `True;
-        Predict_Jump = Target_PC;
+        if (Target_PC != PC) begin
+            Fixed = `True;
+            Predict_Jump = Target_PC;
+        end
     end
-    reg tmp=0;
+    reg tmp = 0;
     always @(posedge Ready) begin
-        if (Fixed&&PC!=Predict_Jump) begin
+        if (Fixed && PC != Predict_Jump) begin
         end else begin
             case (Inst[6:0])
                 `SB_ALL: begin
@@ -69,7 +72,7 @@ module Predictor (
                         Predict_Jump = {15'b0, Predict_Jump[16:0]};
                         Predict_Jump_Bool = `False;
                     end
-                    tmp=tmp^1;
+                    tmp = tmp ^ 1;
                 end
                 `UJ_JAL: begin
                     Imm = {
@@ -98,20 +101,35 @@ module Predictor (
         if (rst) begin
 
         end else if (Train_Ready) begin
-            if(Train_Result)begin
-                case (BTB[Target_PC[10:2]])//ADD is not a good behaviour
-                    2'b00:begin BTB[Target_PC[10:2]]<=2'b01;end
-                    2'b01:begin BTB[Target_PC[10:2]]<=2'b10;end
-                    2'b10:begin BTB[Target_PC[10:2]]<=2'b11;end
-                    2'b11:begin BTB[Target_PC[10:2]]<=2'b11;end
+            if (Train_Result) begin
+                case (BTB[Train_PC[10:2]])  //ADD is not a good behaviour
+                    2'b00: begin
+                        BTB[Train_PC[10:2]] <= 2'b01;
+                    end
+                    2'b01: begin
+                        BTB[Train_PC[10:2]] <= 2'b10;
+                    end
+                    2'b10: begin
+                        BTB[Train_PC[10:2]] <= 2'b11;
+                    end
+                    2'b11: begin
+                        BTB[Train_PC[10:2]] <= 2'b11;
+                    end
                 endcase
-            end
-            else begin
-                case (BTB[Target_PC[10:2]])
-                    2'b00:begin BTB[Target_PC[10:2]]<=2'b00;end
-                    2'b01:begin BTB[Target_PC[10:2]]<=2'b00;end
-                    2'b10:begin BTB[Target_PC[10:2]]<=2'b01;end
-                    2'b11:begin BTB[Target_PC[10:2]]<=2'b10;end
+            end else begin
+                case (BTB[Train_PC[10:2]])
+                    2'b00: begin
+                        BTB[Train_PC[10:2]] <= 2'b00;
+                    end
+                    2'b01: begin
+                        BTB[Train_PC[10:2]] <= 2'b00;
+                    end
+                    2'b10: begin
+                        BTB[Train_PC[10:2]] <= 2'b01;
+                    end
+                    2'b11: begin
+                        BTB[Train_PC[10:2]] <= 2'b10;
+                    end
                 endcase
             end
         end

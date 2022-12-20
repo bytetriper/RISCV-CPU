@@ -17,7 +17,7 @@ int rm(int c){
     return 0;
 }
 int main(){
-    f(300);
+    f(3);
     outlln(172);
     outlln(342);
     return a;
