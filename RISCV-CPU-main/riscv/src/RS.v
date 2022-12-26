@@ -73,11 +73,12 @@ module RS (
     end
     integer Log_File;
     integer clkcycle;
+    `ifdef DEBUG
     initial begin
         Log_File = $fopen("RS_LOG.txt", "w");
         clkcycle = 0;
     end
-
+    `endif
     reg [`RS_Width] Working_RS;
     wire HasFree;
     wire HasValid;
@@ -210,7 +211,8 @@ module RS (
                                                                                                                                     |(Valid[28]&Busy[28])
                                                                                                                                         |(Valid[29]&Busy[29])
                                                                                                                                             |(Valid[30]&Busy[30])
-                                                                                                                                                |(Valid[31]&Busy[31]);
+                            
+    `ifdef DEBUG                                                                                                                    |(Valid[31]&Busy[31]);
     always @(posedge clk) begin
         clkcycle <= clkcycle + 1;
         $fdisplay(Log_File, "Cycle:%d", clkcycle);
@@ -224,6 +226,8 @@ module RS (
             end
         end
     end
+    `endif;
+    
     always @(posedge clk) begin
         if (rst) begin
             for (j = 0; j < 32; j = j + 1) begin

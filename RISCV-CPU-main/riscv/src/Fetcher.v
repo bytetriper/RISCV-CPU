@@ -39,7 +39,9 @@ module Fetcher (
         Inst_Buffer = 32'b0;
         Fixed = `False;
         Stuck=0;
+        `ifdef DEBUG
         Stuck_Log=$fopen("Stuck.txt","w");
+    `endif
     end
     always @(negedge clk) begin
         ready <= `False;
@@ -82,8 +84,10 @@ module Fetcher (
                 Out_PC <= PC;
             end else begin
                 rn <= `False;
+                `ifdef DEBUG
                 Stuck<=Stuck+1;
                 $fwrite(Stuck_Log,"%d ",Stuck);
+                `endif
             end
         end else begin
 

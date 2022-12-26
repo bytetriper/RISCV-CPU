@@ -42,10 +42,12 @@ module Processor (
     integer Out_File, Log, Log_Register;
     integer cycle;
     initial begin
+        `ifdef DEBUG
         Out_File = $fopen("Error.txt", "w");
         Log = $fopen("Log_Processor.txt", "w");
         Log_Register = $fopen("Register_Log.txt", "w");
         cycle = 0;
+        `endif
     end
     integer k;
     initial begin
@@ -55,6 +57,7 @@ module Processor (
             Tags[k] = `Empty;
         end
     end
+    `ifdef DEBUG
     always @(posedge clk) begin
         cycle <= cycle + 1;
         $fdisplay(Log_Register, "Cycle:%d", cycle);
@@ -72,6 +75,7 @@ module Processor (
         $fdisplay(Log_Register, "\n");
 
     end
+    `endif
     always @(negedge clk) begin
         ready = `False;
     end
@@ -81,7 +85,6 @@ module Processor (
             //DO something maybe?
         end else if (Inst_Ready & success) begin
             //Decode:Opcode Inst[6:0]
-            $fdisplay(Log, "Decoding %x: [Name]:%b", Inst, Inst[6:0]);
             case (Inst[6:0])
                 `I_LOAD: begin
                     rd = {27'b0, Inst[11:7]};
@@ -257,7 +260,9 @@ module Processor (
 
                 default: begin
                     ready = `False;
+                    `ifdef DEBUG
                     $fdisplay(Out_File, "[Fatal Error] %x", Inst);
+                    `endif
                 end
             endcase
         end else begin

@@ -46,14 +46,18 @@ module mem_ctrl (
         LSB_ready = `True;
         LSB_value = 0;
         boss = OffWork;
+        `ifdef DEBUG
         Log_File = $fopen("Mem_Ctrl_Log", "w");
+        `endif 
         cycle = 0;
         PreviousBoss = 0;
         ICRead = 0;
         LSBWrite = 0;
         LSBRead = 0;
         Spare = 0;
+        
     end
+    `ifdef DEBUG
     always @(posedge clk) begin
         cycle <= cycle + 1;
         $fdisplay(Log_File, "Cycle:%d", cycle);
@@ -72,6 +76,7 @@ module mem_ctrl (
             end
         endcase
     end
+    `endif
     always @(Reading) begin
         if (Reading == 0) begin  //indicating Reading 5 -> 0
             case (boss)
@@ -124,11 +129,13 @@ module mem_ctrl (
         end
         if (LSB_wn) begin
             LSB_ready = `False;
+            `ifdef DEBUG
             if (LSB_addr == 32'h30004) begin  //End
                 $display("");
                 $display("End:%d", cycle);
                 $display("ICRead Time:%d LSBRead Time:%d LSBWrite Time:%d Spare Time:%d",ICRead,LSBRead,LSBWrite,Spare);
             end
+            `endif 
         end
     end
     always @(posedge clk) begin

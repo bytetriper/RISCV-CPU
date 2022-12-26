@@ -7,7 +7,7 @@
 
 //int a[10100];
 int a[10100];
-int n = 50;
+int n = 100;
 
 int qsrt(int l, int r) {
     int i = l;

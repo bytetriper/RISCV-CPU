@@ -13,9 +13,11 @@ module Alu (
 
 );
     integer Err_File;
+`ifdef DEBUG
     initial begin
         Err_File = $fopen("ALU_ERROR.txt", "w");
     end
+`endif
     always @(*) begin
         if (rst) begin
 
@@ -58,14 +60,16 @@ module Alu (
                 `RightShift_A: begin
                     result = $signed(LV) >> RV[5:0];
                 end
-                `GEQ_S:begin
-                    result ={31'b0, $signed (LV)>=$signed (RV) };
+                `GEQ_S: begin
+                    result = {31'b0, $signed(LV) >= $signed(RV)};
                 end
-                `Less_S:begin
-                    result={31'b0,$signed (LV) < $signed (RV)};
+                `Less_S: begin
+                    result = {31'b0, $signed(LV) < $signed(RV)};
                 end
                 default: begin
+`ifdef DEBUG
                     $fdisplay(Err_File, "[Decoding Error At ALU]%d", Op);
+`endif
                 end
             endcase
         end else begin

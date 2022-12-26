@@ -120,11 +120,13 @@ module Rob (
         ROB_TO_RS_ready = `False;
         clr = `False;
         Working_ROB = 16;
+        `ifdef DEBUG
         Log_File = $fopen("ROB_LOG.txt", "w");
         cycle = 0;
+    `endif
     end
     reg [3:0] w;
-
+    `ifdef DEBUG
     always @(posedge clk) begin
         cycle = cycle + 1;
         $fdisplay(Log_File, "Cycle:%d Head:%d Tail:%d Full:%d HasRead:%d Read_Tag:%d", cycle, Head,
@@ -137,10 +139,12 @@ module Rob (
                 ROB_PC[w]);
         end
     end
+   
     always @(posedge clr) begin
         $fdisplay(Log_File, "Cycle:%d", cycle);
         $fdisplay(Log_File, "Clear Signal Activated; PC:%x ", Clr_PC);
     end
+     `endif
     always @(posedge ready) begin
         if (rst) begin
             for (k = 0; k < 16; k = k + 1) begin
